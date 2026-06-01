@@ -1,4 +1,4 @@
-practical guide to Rasterio.
+# Practical guide to Rasterio.
 
 Think of Rasterio as your translator between the geographical world (coordinates, projections, real-world scale) and the mathematical world (pure numbers in a grid). It is built on top of the powerful GDAL library but wraps it in a much more user-friendly, "Pythonic" way.
 
@@ -26,9 +26,10 @@ with rasterio.open('caminho/para/seu/arquivo.tiff') as dataset:
 Quick Code Cheat Sheet
 Here are the specific snippets you will need for your project's modules.
 
-1. Reading Metadata (For Módulo Validação)
+## 1. Reading Metadata (For Módulo Validação)
 Before you do any math, you need to validate that the raster has the correct spatial data.
 
+~~~
 Python
 import rasterio
 
@@ -39,9 +40,11 @@ with rasterio.open('terreno.tiff') as dataset:
     print(dataset.height)      # Number of rows
     print(dataset.crs)         # Coordinate Reference System (e.g., EPSG:4326)
     print(dataset.transform)   # The math that maps pixels to real-world coordinates
-2. Extracting the Matrix (For Módulo Água)
-This is how you cross the bridge from Rasterio into NumPy. You read a specific "band" (layer) of the raster. Topography data is usually a single band.
+~~~
 
+## 2. Extracting the Matrix (For Módulo Água)
+This is how you cross the bridge from Rasterio into NumPy. You read a specific "band" (layer) of the raster. Topography data is usually a single band.
+~~~
 Python
 import rasterio
 
@@ -51,9 +54,10 @@ with rasterio.open('terreno.tiff') as dataset:
 
 # Now you are outside the 'with' block. 
 # The file is closed, but 'matriz_terreno' is safely stored in memory as a standard matrix!
-3. Masking/Isolating an Area (For Módulo Terreno)
+~~~
+## 3. Masking/Isolating an Area (For Módulo Terreno)
 To isolate a specific state, you will use rasterio.mask. You pass it the open dataset and a list of shapes (polygons), and it returns a new matrix where everything outside the shape is hidden or replaced.
-
+~~~
 Python
 import rasterio
 from rasterio.mask import mask
@@ -74,5 +78,6 @@ with rasterio.open('terreno.tiff') as dataset:
     )
 
 # matriz_delimitada is now a NumPy array with the outside blocked off!
-Pro-Tip for your Validation Module
+~~~
+### Pro-Tip for your Validation Module
 Rasterio matrices often load with a third dimension for the "bands" (e.g., shape (1, 1000, 1000) instead of (1000, 1000)). If your valida_matrizes_tamanho function is failing because of dimensions, you might need to use matriz_terreno[0] to grab just the 2D grid!
