@@ -1,5 +1,5 @@
 import unittest
-from agua import cria_mascara_agua, expandir_mascara_agua
+from agua.agua import cria_mascara_agua, expandir_mascara_agua
 
 class TesteCriaMascaraAgua(unittest.TestCase):
     '''
