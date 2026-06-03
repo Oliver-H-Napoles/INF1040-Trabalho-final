@@ -1,0 +1,70 @@
+{
+  "AP": {
+    "arquivo_topo": "AP_mosaico.tif",
+    "arquivo_front": "front_AP.shp"
+  },
+  "PA": {
+    "arquivo_topo": "PA_mosaico.tif",
+    "arquivo_front": "front_PA.shp"
+  },
+  "MA": {
+    "arquivo_topo": "MA_mosaico.tif",
+    "arquivo_front": "front_MA.shp"
+  },
+  "PI": {
+    "arquivo_topo": "PI_mosaico.tif",
+    "arquivo_front": "front_PI.shp"
+  },
+  "CE": {
+    "arquivo_topo": "CE_mosaico.tif",
+    "arquivo_front": "front_CE.shp"
+  },
+  "RN": {
+    "arquivo_topo": "RN_mosaico.tif",
+    "arquivo_front": "front_RN.shp"
+  },
+  "PB": {
+    "arquivo_topo": "PB_mosaico.tif",
+    "arquivo_front": "front_PB.shp"
+  },
+  "PE": {
+    "arquivo_topo": "PE_mosaico.tif",
+    "arquivo_front": "front_PE.shp"
+  },
+  "AL": {
+    "arquivo_topo": "AL_mosaico.tif",
+    "arquivo_front": "front_AL.shp"
+  },
+  "SE": {
+    "arquivo_topo": "SE_mosaico.tif",
+    "arquivo_front": "front_SE.shp"
+  },
+  "BA": {
+    "arquivo_topo": "BA_mosaico.tif",
+    "arquivo_front": "front_BA.shp"
+  },
+  "ES": {
+    "arquivo_topo": "ES_mosaico.tif",
+    "arquivo_front": "front_ES.shp"
+  },
+  "RJ": {
+    "arquivo_topo": "RJ_mosaico.tif",
+    "arquivo_front": "front_RJ.shp"
+  },
+  "SP": {
+    "arquivo_topo": "SP_mosaico.tif",
+    "arquivo_front": "front_SP.shp"
+  },
+  "PR": {
+    "arquivo_topo": "PR_mosaico.tif",
+    "arquivo_front": "front_PR.shp"
+  },
+  "SC": {
+    "arquivo_topo": "SC_mosaico.tif",
+    "arquivo_front": "front_SC.shp"
+  },
+  "RS": {
+    "arquivo_topo": "RS_mosaico.tif",
+    "arquivo_front": "front_RS.shp"
+  }
+}
