@@ -1,20 +1,19 @@
 import rasterio
-from rasterio import features # CORREÇÃO: Import necessário para a máscara
+from rasterio import features 
 import numpy as np
 import shapefile
 import json
 from typing import Tuple, Any
 
 __all__ = [
-    "obter_caminhos_arquivos",
-    "carregar_dados_topograficos",
-    "carregar_fronteiras",
-    "aplicar_mascara_isolamento"
+    "carregar_estado",
+
 ]
 
 _arquivos_carregados = {
     "rasters": [],
-    "poligonos": []
+    "poligonos": [],
+    "raster_delimitados": []
 }
 
 def obter_caminhos_arquivos(uf: str) -> Tuple[str, str]:
@@ -169,3 +168,38 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
     except Exception as e:
         print(f"Erro ao aplicar máscara de isolamento: {e}")
         return None
+    
+def carregar_estado(uf: str) -> np.ndarray | None:
+    """
+    Função principal do Módulo Terreno. Orquestra a leitura dos caminhos, 
+    o carregamento da topografia, a extração das fronteiras e a aplicação do isolamento.
+
+    Assertiva de entrada (Pré-condição):
+    - 'uf' deve ser uma string contendo a sigla de uma Unidade Federativa litorânea válida.
+    - O ambiente de execução deve conter a pasta 'data' com o arquivo 'estados.json' 
+      e os respectivos arquivos espaciais (.tif e .shp) mapeados.
+
+    Assertiva de saída (Pós-condição):
+    - Retorna uma nova matriz bidimensional (numpy.ndarray) contendo os dados de elevação, 
+      onde todas as coordenadas externas ao estado alvo foram substituídas pelo valor de barreira.
+    - A matriz retornada é uma alocação de memória independente, garantindo que o cache interno 
+      do módulo permaneça encapsulado e protegido contra edições externas.
+    - Se qualquer etapa do fluxo falhar (UF inválida, arquivo inexistente, formato corrompido), 
+      a execução é interrompida de forma segura e a função retorna None.
+
+    @param uf: String com a sigla do estado a ser carregado (ex: "RJ").
+    @return: Matriz topográfica delimitada (np.ndarray) ou None em caso de falha.
+    """
+    caminho_topo, caminho_front = obter_caminhos_arquivos(uf)
+    if not caminho_topo or not caminho_front:
+        return None
+
+    raster, transform = carregar_dados_topograficos(caminho_topo)
+    if raster is None:
+        return None
+
+    poligono = carregar_fronteiras(caminho_front, uf)
+    if poligono is None:
+        return None
+
+    return aplicar_mascara_isolamento(raster, poligono, transform)
