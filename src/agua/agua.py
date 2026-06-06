@@ -3,6 +3,7 @@ __all__ = ["cria_mascara_agua", "expandir_mascara_agua", "carrega_dados"]
 # Import das bibliotecas necessárias
 from copy import deepcopy
 import numpy as np
+from json import load
 
 
 # Dados encapsulados
@@ -15,21 +16,39 @@ _dados: dict = {
 # Funções
 def carrega_dados(path_arq: str) -> int:
     '''
-        Objetivo:
+        Objetivo: Carregar os dados caso a execução seja interrompida
 
         @params:
+            "path_arq" -> String contendo o caminho para o arquivo com as informações da última execução a ser recuperada
         
         @returns:
+            0 -> Se tudo foi carregado sem nenhum problema;
+            1 -> Não encontrou dados sobre a máscara d`água.
+            2 -> Erro ao carregar os arquivos
         
         Assertiva de entrada:
+            O parâmetro "path_arq" tem que ser um caminho válido para um arquivo JSON 
         
         Assertiva de saída:
+            (TODO)
     '''
-    # TODO
-    return 0
+    data: dict
+    with open(path_arq, "r") as file:
+        data = load(file)
+    
+    if "masc_agua" in data.keys():
+        global _dados
+
+        _dados["mascara"] = data["masc_agua"]
+        _dados["nascente"] = acha_nascente(_dados["mascara"])
+
+        if _dados["nascente"] == (-1,):
+            return 2
+        return 0
+    return 1
 
 
-def acha_nascente(mat: np.ndarray, fonte: int) -> tuple[int, int]:
+def acha_nascente(mat: np.ndarray) -> tuple[int, int]:
     tam_x, tam_y = mat.shape
     pos_fonte: dict = {
         0: (0, 0),
@@ -139,7 +158,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
     neighbors: list[tuple[int, int]] = []
     visited: list[bool] = [
         [False] * tam_y
-        for _ in range(tam_y)
+        for _ in range(tam_x)
     ]
     qtd: int = 0
 
