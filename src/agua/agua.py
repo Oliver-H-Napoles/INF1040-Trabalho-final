@@ -38,7 +38,7 @@ def acha_nascente(mat: np.ndarray, fonte: int) -> tuple[int, int]:
         3: (tam_x - 1, 0)
     }
     
-    for (x, y) in pos_fonte.values:
+    for (x, y) in pos_fonte.values():
         if mat[x][y] == 1:
             return (x, y)
     
