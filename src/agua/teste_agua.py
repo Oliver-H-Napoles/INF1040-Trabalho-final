@@ -3,40 +3,77 @@ import numpy as np
 
 from agua import cria_mascara_agua, expandir_mascara_agua
 
-
 class TesteCriaMascaraAgua(unittest.TestCase):
     # ---------- cria_mascara_agua ----------
     '''
         Casos que os inputs são válidos
     '''
     def test_ValidMatrix_0(self):
-        self.assertEqual(cria_mascara_agua(3,2,0), [[1,0],[0,0],[0,0]])
+        ans: np.ndarray = np.array(
+            [
+                [1,0],
+                [0,0],
+                [0,0]
+            ], dtype=float
+        )
+        self.assertTrue(np.array_equal(cria_mascara_agua(3,2,0), ans))
+    
     def test_ValidMatrix_1(self):
-        self.assertEqual(cria_mascara_agua(3,2,1), [[0,1],[0,0],[0,0]])
+        ans: np.ndarray = np.array(
+            [
+                [0, 1],
+                [0, 0],
+                [0, 0]
+            ], dtype=float
+        )
+        self.assertTrue(np.array_equal(cria_mascara_agua(3,2,1), ans))
+
     def test_ValidMatrix_2(self):
-        self.assertEqual(cria_mascara_agua(3,2,2), [[0,0],[0,0],[0,1]])
+        ans: np.ndarray = np.array(
+            [
+                [0, 0],
+                [0, 0],
+                [0, 1]
+            ], dtype=float
+        )
+        self.assertTrue(np.array_equal(cria_mascara_agua(3,2,2), ans))
+        
     def test_ValidMatrix_3(self):
-        self.assertEqual(cria_mascara_agua(3,2,3), [[0,0],[0,0],[1,0]])
+        ans: np.ndarray = np.array(
+            [
+                [0, 0],
+                [0, 0],
+                [1, 0]
+            ], dtype=float
+        )
+        self.assertTrue(np.array_equal(cria_mascara_agua(3,2,3), ans))
+        
     
     '''
         Casos em que o tamanho da matriz é invalido
     '''
     def test_InvalidMatrix_0(self):
-        self.assertEqual(cria_mascara_agua(-1, 0, 0), [4])
+        ans = np.array([4], dtype=float)
+        self.assertTrue(np.array_equal(cria_mascara_agua(-1, 0, 0), ans))
     def test_InvalidMatrix_1(self):
-        self.assertEqual(cria_mascara_agua(0, 0, 0), [4])
+        ans = np.array([4], dtype=float)
+        self.assertTrue(np.array_equal(cria_mascara_agua(0, 0, 0), ans))
     def test_InvalidMatrix_2(self):
-        self.assertEqual(cria_mascara_agua(10, -2, 0), [4])
+        ans = np.array([4], dtype=float)
+        self.assertTrue(np.array_equal(cria_mascara_agua(10, -2, 0), ans))
     
     '''
         Casos em que a fonte d`água não está no intervalo 0:3
     '''
     def test_InvalidWaterFountain_0(self):
-        self.assertEqual(cria_mascara_agua(10, 10, 5), [3])
+        ans = np.array([3], dtype=float)
+        self.assertTrue(np.array_equal(cria_mascara_agua(10, 10, 5), ans))
     def test_InvalidWaterFountain_1(self):
-        self.assertEqual(cria_mascara_agua(10, 10, -1), [3])
+        ans = np.array([3], dtype=float)
+        self.assertTrue(np.array_equal(cria_mascara_agua(10, 10, -1), ans))
     def test_InvalidWaterFountain_2(self):
-        self.assertEqual(cria_mascara_agua(10, 10, 4), [3])
+        ans = np.array([3], dtype=float)
+        self.assertTrue(np.array_equal(cria_mascara_agua(10, 10, 4), ans))
 
     
     # ---------- expandir_mascara_agua ----------
