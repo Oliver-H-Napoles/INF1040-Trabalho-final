@@ -8,7 +8,8 @@ from terreno import (
     carregar_dados_topograficos,
     carregar_fronteiras,
     aplicar_mascara_isolamento,
-    _arquivos_carregados 
+    carregar_estado,
+    _arquivos_carregados
 )
 
 # --- CONFIGURAÇÃO DE DIRETÓRIOS ---
@@ -136,3 +137,68 @@ def test_10_aplicar_mascara_isolamento_nok_sobreposicao_incompativel():
     assert raster_delimitado is not None
     # Como as coordenadas do poligono nao se sobrepoem as do mapa, a matriz inteira vira barreira
     assert np.all(raster_delimitado == 10000)
+
+# =============================================================================
+# 5. Testes de Integração: carregar_estado (Função Pública Principal)
+# =============================================================================
+
+def test_11_carregar_estado_ok_fluxo_completo():
+    print("\nCaso de Teste 11 - Fluxo completo: Informar UF valida e retornar matriz isolada")
+    # Ação
+    matriz_resultado = carregar_estado(ESTADO_TESTE)
+    
+    # Verificação
+    assert matriz_resultado is not None
+    assert isinstance(matriz_resultado, np.ndarray)
+    assert 10000 in matriz_resultado # Garante que a máscara foi aplicada
+    assert np.any(matriz_resultado != 10000) # Garante que há terreno válido
+
+def test_12_carregar_estado_nok_falha_nos_caminhos():
+    print("\nCaso de Teste 12 - Falha em cascata: UF nao existe no JSON de configuracao")
+    # Ação
+    matriz_resultado = carregar_estado("XX")
+    
+    # Verificação
+    assert matriz_resultado is None
+
+def test_13_carregar_estado_nok_falha_no_raster(monkeypatch, tmp_path):
+    print("\nCaso de Teste 13 - Falha em cascata: Caminhos OK, mas TIF corrompido")
+    
+    # Criamos um ambiente falso onde o JSON aponta para um TIF quebrado, mas um SHP real
+    arquivo_corrompido = tmp_path / "falso_mosaico.tif"
+    arquivo_corrompido.write_text("Raster invalido")
+    
+    json_falso = {"RJ": {"arquivo_topo": str(arquivo_corrompido), "arquivo_front": "front_RJ.shp"}}
+    caminho_json = tmp_path / "estados.json"
+    caminho_json.write_text(json.dumps(json_falso))
+    
+    # Forçamos o teste a rodar nessa pasta temporária
+    monkeypatch.chdir(tmp_path)
+    
+    # Ação
+    matriz_resultado = carregar_estado("RJ")
+    
+    # Verificação
+    assert matriz_resultado is None
+
+def test_14_carregar_estado_nok_falha_na_fronteira(monkeypatch, tmp_path):
+    print("\nCaso de Teste 14 - Falha em cascata: TIF OK, mas SHP corrompido")
+    
+    # O inverso do anterior: TIF real, mas SHP quebrado
+    arquivo_corrompido = tmp_path / "falso_shape.shp"
+    arquivo_corrompido.write_text("Shapefile invalido")
+    
+    # Copiamos o caminho real do TIF da pasta data para o json falso
+    caminho_tif_real = os.path.join(DIRETORIO_DATA, "RJ_mosaico.tif")
+    
+    json_falso = {"RJ": {"arquivo_topo": caminho_tif_real, "arquivo_front": str(arquivo_corrompido)}}
+    caminho_json = tmp_path / "estados.json"
+    caminho_json.write_text(json.dumps(json_falso))
+    
+    monkeypatch.chdir(tmp_path)
+    
+    # Ação
+    matriz_resultado = carregar_estado("RJ")
+    
+    # Verificação
+    assert matriz_resultado is None
