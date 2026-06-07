@@ -76,7 +76,8 @@ def gerar_heatmap(mapa):
         ax.imshow(mapa)
         ax.set_title("Heatmap da área analisada")
         return fig
-    except Exception:
+    except Exception as erro:
+        print(f"Erro ao gerar heatmap: {erro}")
         return None
 
 
