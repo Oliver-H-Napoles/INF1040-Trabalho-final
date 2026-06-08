@@ -40,8 +40,9 @@ def obter_caminhos_arquivos(uf: str) -> Tuple[str, str]:
             dados_estado = mapa_estados[uf_formatada]
         return "data/" + dados_estado["arquivo_topo"], "data/" + dados_estado["arquivo_front"]
 
-    except Exception as e:
-        raise e
+    except Exception as erro:
+        print(f"Erro ao obter caminhos para a UF '{uf}': {erro}")
+        return None, None
 
 def carregar_dados_topograficos(caminho_arq_topo: str) -> Tuple[np.ndarray, Any]:
     """
@@ -69,8 +70,9 @@ def carregar_dados_topograficos(caminho_arq_topo: str) -> Tuple[np.ndarray, Any]
             
         return raster_terreno, transform
 
-    except Exception as e:
-        raise e
+    except Exception as erro:
+        print(f"Erro ao carregar dados topograficos de '{caminho_arq_topo}': {erro}")
+        return None, None
 
 def carregar_fronteiras(caminho_arq_front: str, uf_alvo: str):
     """
@@ -110,8 +112,9 @@ def carregar_fronteiras(caminho_arq_front: str, uf_alvo: str):
             
             return poligono_fronteira
 
-    except Exception as e:
-        raise e
+    except Exception as erro:
+        print(f"Erro ao carregar fronteiras de '{caminho_arq_front}': {erro}")
+        return None
 
 
 def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
@@ -166,8 +169,9 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
 
         return raster_delimitado
 
-    except Exception as e:
-        raise e
+    except Exception as erro:
+        print(f"Erro ao aplicar mascara de isolamento: {erro}")
+        return None
 
 
 def carregar_estado(uf: str) -> np.ndarray | None:

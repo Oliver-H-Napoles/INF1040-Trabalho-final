@@ -30,3 +30,32 @@ A aplicação foi estruturada seguindo o princípio da decomposição em **cinco
 *   **Módulo Terreno** *(Desenvolvido por Maria Clara Padilha Pires)*: Encarregado da manipulação de arquivos geográficos, como carregar dados topográficos, ler polígonos de fronteira e aplicar a máscara de isolamento no terreno.
 *   **Módulo Visualização** *(Desenvolvido por Gabriel Campos Correa de Araujo)*: Manipula as matrizes resultantes para projetar as camadas, gerando os objetos do *heatmap* e plotando os mapas de inundação.
 *   **Módulo Validação** *(Desenvolvido por Oliver Hoerde Napoles)*: Módulo utilitário focado na verificação de regras de negócio e integridade estrutural. Possui funções para validar a entrada de UFs e elevações, além de checar a integridade de rasters, polígonos e tamanhos de matrizes.
+
+## ✅ Convenção de Saídas (Erro/Êxito)
+
+Para padronizar a sinalização de erro e êxito em **todos os módulos**, o projeto adota uma convenção única, dividida por tipo de função:
+
+*   **Funções de ação / validação** (não produzem um dado de domínio — apenas validam ou executam um efeito): retornam um **código de status inteiro**.
+    *   `0` → êxito;
+    *   `≥ 1` → erro (cada função documenta seus códigos; `1` é o erro genérico quando não há subtipos).
+    *   Exemplos: `valida_uf`, `valida_elevacao`, `projetar_camadas`, `plot_layers`, `carrega_dados`, `main`.
+*   **Funções produtoras** (retornam um artefato — matriz, polígono, figura, tupla ou valor calculado): retornam o **objeto/valor** em caso de êxito e **`None`** em caso de falha esperada. **Não levantam exceção** para erros previsíveis (arquivo inexistente, formato inválido, parâmetro fora do domínio).
+    *   Exemplos: `carregar_estado`, `cria_mascara_agua`, `expandir_mascara_agua`, `gerar_heatmap`, `obter_caminhos_arquivos`.
+
+## 🧪 Testes
+
+Os testes usam **pytest** e seguem uma convenção única de nomenclatura: cada módulo possui um arquivo `test_<modulo>.py` com funções `test_*`, cobrindo todos os casos de uso (êxito e erro) de cada função do módulo. Todo o I/O pesado (leitura de rasters/shapefiles, JSON e renderização do matplotlib) é **mockado**, de modo que a suíte não depende dos arquivos reais em `data/` nem do diretório de execução, e nenhum gráfico é aberto.
+
+```bash
+# Rodar toda a suíte de uma vez
+pytest
+
+# Rodar os testes de um módulo específico (em leva)
+pytest src/agua
+pytest src/terreno
+pytest src/validacao
+pytest src/visualizacao
+pytest src/test_principal.py
+```
+
+A configuração fica em `pytest.ini` (raiz do projeto), que define `pythonpath = src` — assim os testes podem ser executados de qualquer diretório, sem ajustes manuais de `PYTHONPATH`.
