@@ -1,6 +1,7 @@
 # ==========================================================
 # IMPORTS DOS OUTROS MÓDULOS
 # ==========================================================
+import sys
 
 # Módulo Validação
 from validacao.validacao import (
@@ -23,13 +24,11 @@ from agua import (
 )
 
 # Módulo Visualização
-'''
 from visualizacao.visualizacao import (
     projetar_camadas,
     gerar_heatmap,
     plot_layers
 )
-'''
 
 # ==========================================================
 # MÓDULO PRINCIPAL
@@ -90,22 +89,17 @@ def obter_elevacao() -> int:
 # FLUXO PRINCIPAL DA APLICAÇÃO
 # ==========================================================
 
-def main():
-
+def main(uf):
     print("\nSIMULADOR DE ELEVAÇÃO DO NÍVEL DO MAR\n")
+
+    status_uf = valida_uf(uf)
 
     # ------------------------------------------------------
     # Entrada do usuário
     # ------------------------------------------------------
 
-    uf_alvo = obter_uf()
     elevacao = obter_elevacao()
-
-    # ------------------------------------------------------
-    # Validação
-    # ------------------------------------------------------
-
-    status_uf = valida_uf(uf_alvo)
+    
 
     if status_uf != 0:
         print("Erro: UF inválida.")
@@ -125,9 +119,13 @@ def main():
         uf_alvo
     )
 
-    raster_terreno = carregar_dados_topograficos(
-        caminho_tif
-    )
+    try:
+        raster_terreno, transform = carregar_dados_topograficos(
+            caminho_tif
+        )
+    except Exception as e:
+        print(f"Erro ao carregar dados topográficos: {e}")
+        return
 
     poligono_fronteira = carregar_fronteiras(
         caminho_shp,
@@ -136,7 +134,8 @@ def main():
 
     raster_isolado = aplicar_mascara_isolamento(
         raster_terreno,
-        poligono_fronteira
+        poligono_fronteira,
+        transform
     )
 
     # ------------------------------------------------------
@@ -188,4 +187,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+     
+    if len(sys.argv) > 1:
+        uf_alvo = sys.argv[1]
+    else:
+        print("Erro: UF não fornecida. Use: python principal.py <UF>")
+        sys.exit(1)
+    main(uf_alvo)

@@ -32,6 +32,7 @@ def carrega_dados(path_arq: str) -> int:
         Assertiva de saída:
             (TODO)
     '''
+    print("Carregando dados da última execução")
     data: dict
     with open(path_arq, "r") as file:
         data = load(file)
@@ -39,16 +40,17 @@ def carrega_dados(path_arq: str) -> int:
     if "masc_agua" in data.keys():
         global _dados
 
-        _dados["mascara"] = data["masc_agua"]
-        _dados["nascente"] = acha_nascente(_dados["mascara"])
-
-        if _dados["nascente"] == (-1,):
-            return 2
-        return 0
+        try:
+            _dados["mascara"] = data["masc_agua"]
+            _dados["nascente"] = acha_nascente(_dados["mascara"])
+        except Exception as e:
+            raise e
+        
     return 1
 
 
 def acha_nascente(mat: np.ndarray) -> tuple[int, int]:
+    print("Procurando a nascente na máscara de água")
     tam_x, tam_y = mat.shape
     pos_fonte: dict = {
         0: (0, 0),
@@ -58,10 +60,10 @@ def acha_nascente(mat: np.ndarray) -> tuple[int, int]:
     }
     
     for (x, y) in pos_fonte.values():
-        if mat[x][y] == 1:
+        if mat[x][y] == 0:
             return (x, y)
     
-    return (-1,)
+    raise Exception("Nascente não encontrada na máscara de água carregada.")
 
 
 def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray:
@@ -86,7 +88,7 @@ def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray:
             O retorno dessa função deve ser uma matriz de dimensões (tam_x, tam_y) com todos os valores em 0, exceto pelo canto em que a nascente d`água está presente;
             Cada célula da matriz deve ter apenas um inteiro.
     '''
-
+    print("Criando máscara de água")
     tamanhoValido: bool = (tam_x > 0) and (tam_y > 0)
     if not tamanhoValido:
         return np.array([4], dtype=float)
@@ -140,7 +142,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
         Assertivas de saída:
             O retorno dessa função será um float não nulo;
     '''
-    
+    print("Expandindo máscara de água")
     if nivel_do_mar <= 0:
         return -2.0
     

@@ -1,11 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.visualizacao.visualizacao import (
-    projetar_camadas,
-    gerar_heatmap,
-    plot_layers
-)
+from visualizacao.visualizacao import projetar_camadas, gerar_heatmap, plot_layers
 
 
 def test_projetar_camadas_sucesso():
