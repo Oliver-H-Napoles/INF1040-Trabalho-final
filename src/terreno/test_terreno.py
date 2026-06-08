@@ -1,205 +1,230 @@
-import pytest
-import numpy as np
-import os
-import json
+"""
+Testes unitários do Módulo Terreno.
 
+Convenção de saídas validada por estes testes (funções produtoras):
+    - êxito -> retorna o objeto (tupla de caminhos, raster, polígono ou matriz);
+    - falha esperada -> retorna `None` (ou `(None, None)` nas funções que
+      devolvem tupla). Nenhuma função levanta exceção para erros previsíveis.
+
+Mocks: todo o I/O (leitura de JSON, rasters via `rasterio` e shapefiles via
+`shapefile`/`features`) é substituído por dublês, de modo que os testes não
+dependem dos arquivos reais em `data/` nem do diretório de execução.
+"""
+from unittest.mock import MagicMock, mock_open, patch
+
+import numpy as np
+import pytest
+
+import terreno.terreno as terreno
 from terreno import (
     obter_caminhos_arquivos,
     carregar_dados_topograficos,
     carregar_fronteiras,
     aplicar_mascara_isolamento,
     carregar_estado,
-    _arquivos_carregados
+    _arquivos_carregados,
 )
 
-# --- CONFIGURAÇÃO DE DIRETÓRIOS ---
-DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))  # .../src/terreno
-DIRETORIO_SRC   = os.path.dirname(DIRETORIO_ATUAL)            # .../src
-DIRETORIO_RAIZ  = os.path.dirname(DIRETORIO_SRC)              # .../ (raiz do projeto)
-DIRETORIO_DATA  = os.path.join(DIRETORIO_RAIZ, "data")        # .../data  ✓
-
-ESTADO_TESTE = "SP"
-ESTADO_DISTANTE = "RS" # Usado no Caso 2 da máscara de isolamento
 
 @pytest.fixture(autouse=True)
-def configurar_diretorio_e_limpar_cache(monkeypatch):
-    """
-    Muda o diretório de execução para a pasta 'data' e limpa o cache da memória RAM.
-    """
-    monkeypatch.chdir(DIRETORIO_DATA)
+def limpar_cache():
+    """Limpa o cache encapsulado do módulo antes de cada teste."""
     _arquivos_carregados["rasters"].clear()
     _arquivos_carregados["poligonos"].clear()
+    _arquivos_carregados["raster_delimitados"].clear()
+    yield
+
+
+def _context_manager(valor_entrada):
+    """Cria um MagicMock que funciona como gerenciador de contexto (`with`)."""
+    cm = MagicMock()
+    cm.__enter__.return_value = valor_entrada
+    cm.__exit__.return_value = False
+    return cm
+
 
 # =============================================================================
-# 1. Testes: obter_caminhos_arquivos [cite: 162-165]
+# obter_caminhos_arquivos  (-> (str, str) | (None, None))
 # =============================================================================
 
-def test_01_obter_caminhos_arquivos_ok_caminho_valido():
-    print("\nCaso de Teste 01 - Informar UF litoranea valida e retornar tupla com os caminhos corretos")
-    topo, front = obter_caminhos_arquivos(ESTADO_TESTE)
-    
-    assert topo is not None
-    assert front is not None
-    assert os.path.exists(topo)
-    assert os.path.exists(front)
+def test_obter_caminhos_ok_uf_valida():
+    """UF presente no JSON -> tupla com os caminhos de topo e fronteira."""
+    mapa = {"RS": {"arquivo_topo": "RS_mosaico.tif", "arquivo_front": "front_RS.shp"}}
+    with patch("builtins.open", mock_open()), \
+            patch.object(terreno.json, "load", return_value=mapa):
+        topo, front = obter_caminhos_arquivos("RS")
+
+    assert topo == "data/RS_mosaico.tif"
+    assert front == "data/front_RS.shp"
+
+
+def test_obter_caminhos_ok_normaliza_uf():
+    """UF com espaços/minúsculas ('  rs ') é normalizada -> caminho correto."""
+    mapa = {"RS": {"arquivo_topo": "RS_mosaico.tif", "arquivo_front": "front_RS.shp"}}
+    with patch("builtins.open", mock_open()), \
+            patch.object(terreno.json, "load", return_value=mapa):
+        topo, front = obter_caminhos_arquivos("  rs ")
+
+    assert topo == "data/RS_mosaico.tif"
+
+
+def test_obter_caminhos_erro_uf_ausente():
+    """UF ausente do JSON ('XX') -> (None, None)."""
+    with patch("builtins.open", mock_open()), \
+            patch.object(terreno.json, "load", return_value={}):
+        assert obter_caminhos_arquivos("XX") == (None, None)
+
+
+def test_obter_caminhos_erro_arquivo_json_inexistente():
+    """Falha ao abrir o estados.json -> (None, None)."""
+    with patch("builtins.open", side_effect=OSError("sem estados.json")):
+        assert obter_caminhos_arquivos("RS") == (None, None)
+
 
 # =============================================================================
-# 2. Testes: carregar_dados_topograficos [cite: 167-175]
+# carregar_dados_topograficos  (-> (ndarray, transform) | (None, None))
 # =============================================================================
 
-def test_02_carregar_dados_topograficos_ok_arquivo_integro():
-    print("\nCaso de Teste 02 - Informar um caminho de diretorio valido contendo um arquivo integro")
-    topo, _ = obter_caminhos_arquivos(ESTADO_TESTE)
-    raster_terreno, transform = carregar_dados_topograficos(topo)
-    
-    assert raster_terreno is not None
-    assert isinstance(raster_terreno, np.ndarray)
-    assert transform is not None
+def test_carregar_topografico_ok_arquivo_integro():
+    """Raster íntegro (mock) -> tupla (matriz, transform) e cache preenchido."""
+    raster_fake = np.array([[1.0, 2.0], [3.0, 4.0]])
+    dataset = MagicMock()
+    dataset.read.return_value = raster_fake
+    dataset.transform = "TRANSFORM_FAKE"
 
-def test_03_carregar_dados_topograficos_nok_arquivo_inexistente():
-    print("\nCaso de Teste 03 - Informar caminho apontando para arquivo inexistente")
-    raster_terreno, transform = carregar_dados_topograficos("caminho_inexistente/falso.tif")
-    
-    assert raster_terreno is None
-    assert transform is None
+    with patch.object(terreno.rasterio, "open", return_value=_context_manager(dataset)):
+        raster, transform = carregar_dados_topograficos("qualquer.tif")
 
-def test_04_carregar_dados_topograficos_nok_arquivo_corrompido(tmp_path):
-    print("\nCaso de Teste 04 - Informar caminho valido para arquivo corrompido ou formato incorreto")
-    arquivo_corrompido = tmp_path / "falso_raster.tif"
-    arquivo_corrompido.write_text("Arquivo txt renomeado simulando um raster corrompido")
-    
-    raster_terreno, transform = carregar_dados_topograficos(str(arquivo_corrompido))
-    
-    assert raster_terreno is None
-    assert transform is None
+    assert np.array_equal(raster, raster_fake)
+    assert transform == "TRANSFORM_FAKE"
+    # O resultado deve ter sido encapsulado no cache.
+    assert len(_arquivos_carregados["rasters"]) == 1
+
+
+def test_carregar_topografico_erro_arquivo_invalido():
+    """Erro ao abrir o raster (corrompido/inexistente) -> (None, None)."""
+    with patch.object(terreno.rasterio, "open", side_effect=Exception("corrompido")):
+        assert carregar_dados_topograficos("falso.tif") == (None, None)
+
 
 # =============================================================================
-# 3. Testes: carregar_fronteiras [cite: 176-183]
+# carregar_fronteiras  (-> poligono | None)
 # =============================================================================
 
-def test_05_carregar_fronteiras_ok_leitura_sucesso():
-    print("\nCaso de Teste 05 - Informar arquivo valido e UF alvo existente que possua ilhas")
-    _, front = obter_caminhos_arquivos(ESTADO_TESTE)
-    poligono_fronteira = carregar_fronteiras(front, ESTADO_TESTE)
-    
-    assert poligono_fronteira is not None
+def test_carregar_fronteiras_ok_uf_encontrada():
+    """UF presente na tabela do shapefile -> polígono correspondente e cache."""
+    poligono_fake = MagicMock(name="poligono")
+    sf = MagicMock()
+    sf.records.return_value = [["0", "Sao Paulo", "SP"], ["1", "Rio Grande do Sul", "RS"]]
+    sf.shape.return_value = poligono_fake
 
-def test_06_carregar_fronteiras_nok_uf_ausente():
-    print("\nCaso de Teste 06 - Informar arquivo valido, mas UF alvo inexistente na tabela")
-    _, front = obter_caminhos_arquivos(ESTADO_TESTE)
-    poligono_fronteira = carregar_fronteiras(front, "XX")
-    
-    assert poligono_fronteira is None
+    with patch.object(terreno.shapefile, "Reader", return_value=_context_manager(sf)):
+        resultado = carregar_fronteiras("front_RS.shp", "RS")
 
-def test_07_carregar_fronteiras_nok_formato_invalido(tmp_path):
-    print("\nCaso de Teste 07 - Informar UF valida e arquivo existente, mas de formato incorreto")
-    arquivo_corrompido = tmp_path / "falso_shape.shp"
-    arquivo_corrompido.write_text("Conteudo de texto bloqueando a leitura do shapefile")
-    
-    poligono_fronteira = carregar_fronteiras(str(arquivo_corrompido), ESTADO_TESTE)
-    
-    assert poligono_fronteira is None
+    assert resultado is poligono_fake
+    sf.shape.assert_called_once_with(1)
+    assert len(_arquivos_carregados["poligonos"]) == 1
 
-def test_08_carregar_fronteiras_nok_arquivo_inexistente():
-    print("\nCaso de Teste 08 - Informar UF valida, mas caminho de arquivo inexistente")
-    poligono_fronteira = carregar_fronteiras("caminho_inexistente/front_falso.shp", ESTADO_TESTE)
-    
-    assert poligono_fronteira is None
 
-# =============================================================================
-# 4. Testes: aplicar_mascara_isolamento [cite: 184-190]
-# =============================================================================
+def test_carregar_fronteiras_erro_uf_ausente_na_tabela():
+    """UF não encontrada na tabela do shapefile -> None."""
+    sf = MagicMock()
+    sf.records.return_value = [["0", "Sao Paulo", "SP"]]
 
-def test_09_aplicar_mascara_isolamento_ok_sobreposicao_padrao():
-    print("\nCaso de Teste 09 - Fornecer raster valido e poligono correspondente ao mesmo estado")
-    topo, front = obter_caminhos_arquivos(ESTADO_TESTE)
-    
-    raster_terreno, transform = carregar_dados_topograficos(topo)
-    poligono = carregar_fronteiras(front, ESTADO_TESTE)
-    
-    raster_delimitado = aplicar_mascara_isolamento(raster_terreno, poligono, transform)
-    
-    assert raster_delimitado is not None
-    # Verifica se a barreira (10000 metros) foi aplicada externamente
-    assert 10000 in raster_delimitado
-    # Garante que os dados de elevacao originais (!= 10000) foram preservados internamente
-    assert np.any(raster_delimitado != 10000)
+    with patch.object(terreno.shapefile, "Reader", return_value=_context_manager(sf)):
+        assert carregar_fronteiras("front_RS.shp", "RS") is None
 
-def test_10_aplicar_mascara_isolamento_nok_sobreposicao_incompativel():
-    print("\nCaso de Teste 10 - Fornecer raster valido e poligono de outro estado distante")
-    topo_teste, _ = obter_caminhos_arquivos(ESTADO_TESTE)
-    _, front_distante = obter_caminhos_arquivos(ESTADO_DISTANTE)
-    
-    raster_terreno, transform = carregar_dados_topograficos(topo_teste)
-    poligono_distante = carregar_fronteiras(front_distante, ESTADO_DISTANTE)
-    
-    raster_delimitado = aplicar_mascara_isolamento(raster_terreno, poligono_distante, transform)
-    
-    assert raster_delimitado is not None
-    # Como as coordenadas do poligono nao se sobrepoem as do mapa, a matriz inteira vira barreira
-    assert np.all(raster_delimitado == 10000)
+
+def test_carregar_fronteiras_erro_arquivo_invalido():
+    """Erro ao abrir o shapefile (formato/caminho inválido) -> None."""
+    with patch.object(terreno.shapefile, "Reader", side_effect=Exception("nao e shapefile")):
+        assert carregar_fronteiras("falso.shp", "RS") is None
+
 
 # =============================================================================
-# 5. Testes de Integração: carregar_estado (Função Pública Principal)
+# aplicar_mascara_isolamento  (-> ndarray | None)
 # =============================================================================
 
-def test_11_carregar_estado_ok_fluxo_completo():
-    print("\nCaso de Teste 11 - Fluxo completo: Informar UF valida e retornar matriz isolada")
-    # Ação
-    matriz_resultado = carregar_estado(ESTADO_TESTE)
-    
-    # Verificação
-    assert matriz_resultado is not None
-    assert isinstance(matriz_resultado, np.ndarray)
-    assert 10000 in matriz_resultado # Garante que a máscara foi aplicada
-    assert np.any(matriz_resultado != 10000) # Garante que há terreno válido
+def test_aplicar_mascara_ok_aplica_barreira():
+    """Polígono válido -> matriz com barreira (10000) fora e dados preservados dentro."""
+    raster = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+    poligono = MagicMock()
+    poligono.__geo_interface__ = {"type": "Polygon", "coordinates": []}
 
-def test_12_carregar_estado_nok_falha_nos_caminhos():
-    print("\nCaso de Teste 12 - Falha em cascata: UF nao existe no JSON de configuracao")
-    # Ação
-    matriz_resultado = carregar_estado("XX")
-    
-    # Verificação
-    assert matriz_resultado is None
+    # 1ª chamada: máscara do estado (True = fora do estado -> vira barreira).
+    mascara_estado = np.array([[True, False, False],
+                               [False, False, False],
+                               [False, False, False]])
+    # 2ª chamada: máscara do mar (nenhuma célula é mar neste cenário).
+    mascara_mar = np.zeros((3, 3), dtype=bool)
 
-def test_13_carregar_estado_nok_falha_no_raster(monkeypatch, tmp_path):
-    print("\nCaso de Teste 13 - Falha em cascata: Caminhos OK, mas TIF corrompido")
-    
-    # Criamos um ambiente falso onde o JSON aponta para um TIF quebrado, mas um SHP real
-    arquivo_corrompido = tmp_path / "falso_mosaico.tif"
-    arquivo_corrompido.write_text("Raster invalido")
-    
-    json_falso = {"RJ": {"arquivo_topo": str(arquivo_corrompido), "arquivo_front": "front_RJ.shp"}}
-    caminho_json = tmp_path / "estados.json"
-    caminho_json.write_text(json.dumps(json_falso))
-    
-    # Forçamos o teste a rodar nessa pasta temporária
-    monkeypatch.chdir(tmp_path)
-    
-    # Ação
-    matriz_resultado = carregar_estado("RJ")
-    
-    # Verificação
-    assert matriz_resultado is None
+    coastline_sf = MagicMock()
+    coastline_sf.shapes.return_value = [MagicMock(__geo_interface__={"type": "Polygon"})]
 
-def test_14_carregar_estado_nok_falha_na_fronteira(monkeypatch, tmp_path):
-    print("\nCaso de Teste 14 - Falha em cascata: TIF OK, mas SHP corrompido")
-    
-    # O inverso do anterior: TIF real, mas SHP quebrado
-    arquivo_corrompido = tmp_path / "falso_shape.shp"
-    arquivo_corrompido.write_text("Shapefile invalido")
-    
-    # Copiamos o caminho real do TIF da pasta data para o json falso
-    caminho_tif_real = os.path.join(DIRETORIO_DATA, "RJ_mosaico.tif")
-    
-    json_falso = {"RJ": {"arquivo_topo": caminho_tif_real, "arquivo_front": str(arquivo_corrompido)}}
-    caminho_json = tmp_path / "estados.json"
-    caminho_json.write_text(json.dumps(json_falso))
-    
-    monkeypatch.chdir(tmp_path)
-    
-    # Ação
-    matriz_resultado = carregar_estado("RJ")
-    
-    # Verificação
-    assert matriz_resultado is None
+    with patch.object(terreno.features, "geometry_mask",
+                      side_effect=[mascara_estado, mascara_mar]), \
+            patch.object(terreno.shapefile, "Reader",
+                         return_value=_context_manager(coastline_sf)):
+        resultado = aplicar_mascara_isolamento(raster, poligono, "TRANSFORM")
+
+    assert resultado is not None
+    # A célula externa ao estado deve ter virado barreira (10000).
+    assert resultado[0][0] == 10000
+    # As células internas preservam o valor original.
+    assert resultado[1][1] == 5.0
+
+
+def test_aplicar_mascara_erro_falha_geometria():
+    """Falha no cálculo da geometria (geometry_mask) -> None."""
+    raster = np.array([[1.0, 2.0], [3.0, 4.0]])
+    poligono = MagicMock()
+    poligono.__geo_interface__ = {"type": "Polygon"}
+
+    with patch.object(terreno.features, "geometry_mask", side_effect=Exception("erro geo")):
+        assert aplicar_mascara_isolamento(raster, poligono, "TRANSFORM") is None
+
+
+# =============================================================================
+# carregar_estado  (orquestração -> ndarray | None)
+# =============================================================================
+
+def test_carregar_estado_ok_fluxo_completo():
+    """Todas as etapas bem-sucedidas -> matriz isolada final."""
+    matriz_final = np.array([[10000, 1.0], [2.0, -1.0]])
+    with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
+            patch.object(terreno, "carregar_dados_topograficos", return_value=(np.zeros((2, 2)), "TR")), \
+            patch.object(terreno, "carregar_fronteiras", return_value=MagicMock()), \
+            patch.object(terreno, "aplicar_mascara_isolamento", return_value=matriz_final):
+        resultado = carregar_estado("RS")
+
+    assert np.array_equal(resultado, matriz_final)
+
+
+def test_carregar_estado_erro_falha_nos_caminhos():
+    """Falha ao obter caminhos (UF inexistente) -> None (curto-circuito)."""
+    with patch.object(terreno, "obter_caminhos_arquivos", return_value=(None, None)):
+        assert carregar_estado("XX") is None
+
+
+def test_carregar_estado_erro_falha_no_raster():
+    """Caminhos OK, mas falha ao carregar o raster -> None (curto-circuito)."""
+    with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
+            patch.object(terreno, "carregar_dados_topograficos", return_value=(None, None)):
+        assert carregar_estado("RS") is None
+
+
+def test_carregar_estado_erro_falha_na_fronteira():
+    """Raster OK, mas falha ao carregar a fronteira -> None (curto-circuito)."""
+    with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
+            patch.object(terreno, "carregar_dados_topograficos", return_value=(np.zeros((2, 2)), "TR")), \
+            patch.object(terreno, "carregar_fronteiras", return_value=None):
+        assert carregar_estado("RS") is None
+
+
+def test_carregar_estado_erro_falha_no_isolamento():
+    """Fronteira OK, mas falha ao aplicar o isolamento -> None."""
+    with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
+            patch.object(terreno, "carregar_dados_topograficos", return_value=(np.zeros((2, 2)), "TR")), \
+            patch.object(terreno, "carregar_fronteiras", return_value=MagicMock()), \
+            patch.object(terreno, "aplicar_mascara_isolamento", return_value=None):
+        assert carregar_estado("RS") is None

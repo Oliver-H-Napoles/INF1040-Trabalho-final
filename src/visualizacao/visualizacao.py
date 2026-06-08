@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-__all__ = ["projetar_camadas", "gerar_heatmap", "plot_layers"]
-
 
 def projetar_camadas(terreno, masc_agua) -> int:
     """
@@ -42,6 +40,7 @@ def projetar_camadas(terreno, masc_agua) -> int:
         plt.imshow(terreno)
         plt.imshow(np.ma.masked_where(masc_agua == 0, masc_agua), alpha=0.5)
         plt.title("Projeção da inundação sobre o terreno")
+        plt.show()
         return 0
     except Exception:
         return 4

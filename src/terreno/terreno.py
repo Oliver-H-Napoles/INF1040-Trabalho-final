@@ -7,7 +7,6 @@ from typing import Tuple, Any
 
 __all__ = [
     "carregar_estado",
-
 ]
 
 _arquivos_carregados = {
@@ -32,19 +31,17 @@ def obter_caminhos_arquivos(uf: str) -> Tuple[str, str]:
     @param uf: String contendo a sigla da Unidade Federativa alvo.
     @return: Tupla com (caminho_topo, caminho_front) ou (None, None).
     """
+    print("Obtendo caminhos dos arquivos para a UF:", uf)
     uf_formatada = uf.strip().upper()
     try:
-        with open('estados.json', 'r', encoding='utf-8') as estados:
+        with open('data/estados.json', 'r', encoding='utf-8') as estados:
             mapa_estados = json.load(estados)
             
-        dados_estado = mapa_estados[uf_formatada]
-        return dados_estado["arquivo_topo"], dados_estado["arquivo_front"]
+            dados_estado = mapa_estados[uf_formatada]
+        return "data/" + dados_estado["arquivo_topo"], "data/" + dados_estado["arquivo_front"]
 
-    except FileNotFoundError:
-        print("Arquivo de configuração estados.json não encontrado.")
-        return None, None
-    except KeyError:
-        print(f"Dados para a UF {uf_formatada} não configurados no JSON.")
+    except Exception as erro:
+        print(f"Erro ao obter caminhos para a UF '{uf}': {erro}")
         return None, None
 
 def carregar_dados_topograficos(caminho_arq_topo: str) -> Tuple[np.ndarray, Any]:
@@ -63,24 +60,20 @@ def carregar_dados_topograficos(caminho_arq_topo: str) -> Tuple[np.ndarray, Any]
     @param caminho_arq_topo: Caminho para o arquivo raster.
     @return: Tupla (matriz_elevacao, transformacao_espacial) ou (None, None).
     """
+    print("Carregando dados topográficos")
     try:
         with rasterio.open(caminho_arq_topo) as dataset:
             raster_terreno = dataset.read(1)
             transform = dataset.transform
             
-        _arquivos_carregados["rasters"].append({"matriz": raster_terreno, "transform": transform})
+            _arquivos_carregados["rasters"].append({"matriz": raster_terreno, "transform": transform})
+            
         return raster_terreno, transform
 
-    except FileNotFoundError:
-        print("Arquivo não encontrado.")
+    except Exception as erro:
+        print(f"Erro ao carregar dados topograficos de '{caminho_arq_topo}': {erro}")
         return None, None
-    except rasterio.errors.RasterioIOError:
-        print("Erro de leitura do arquivo.")
-        return None, None
-    except Exception as e:
-        print(f"Erro inesperado ao carregar topografia: {e}")
-        return None, None
-    
+
 def carregar_fronteiras(caminho_arq_front: str, uf_alvo: str):
     """
     Carrega a geometria de fronteira do estado a partir de um shapefile e encapsula em memória.
@@ -100,6 +93,7 @@ def carregar_fronteiras(caminho_arq_front: str, uf_alvo: str):
     @param uf_alvo: Sigla do estado cujas coordenadas serão extraídas.
     @return: Objeto poligono com a geometria do estado ou None.
     """
+    print("Carregando fronteiras")
     try:
         with shapefile.Reader(caminho_arq_front) as sf:
             indice_uf = -1
@@ -118,16 +112,11 @@ def carregar_fronteiras(caminho_arq_front: str, uf_alvo: str):
             
             return poligono_fronteira
 
-    except shapefile.ShapefileException:
-        print("Formato de arquivo inválido para leitura")
+    except Exception as erro:
+        print(f"Erro ao carregar fronteiras de '{caminho_arq_front}': {erro}")
         return None
-    except FileNotFoundError:
-        print("Arquivo não encontrado")
-        return None
-    except Exception as e:
-        print(f"Erro inesperado ao carregar fronteira: {e}")
-        return None
-    
+
+
 def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
     """
     Sobrepõe o polígono de fronteira sobre o raster topográfico para isolar a área de simulação.
@@ -148,15 +137,13 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
     @param transform: Metadados de transformação espacial do mapa original.
     @return: Matriz com o isolamento topográfico aplicado ou None.
     """
-    
+    print("Aplicando máscara de isolamento")
     VALOR_BARREIRA = 10000
-    
+    VALOR_MAR = -1
     try:
         formato_matriz = raster_terreno.shape
-        
-        # Converte para dict Python puro, eliminando arrays numpy nas coordenadas
-        geometria = json.loads(json.dumps(poligono_fronteira.__geo_interface__))
-        
+
+        # CORREÇÃO: Uso do __geo_interface__ para compatibilidade com rasterio
         mascara_booleana = features.geometry_mask(
             geometries=[geometria], 
             out_shape=formato_matriz,
@@ -164,14 +151,29 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
             invert=False
         )
         
-        raster_delimitado = np.where(mascara_booleana, VALOR_BARREIRA, raster_terreno)
-        _arquivos_carregados["raster_delimitados"].append(raster_delimitado.copy())
+        raster_estado = np.where(mascara_booleana, VALOR_BARREIRA, raster_terreno)
+
+        with shapefile.Reader("data/coastline.shp") as sf:
+            # 1. Grab the geo_interface for ALL shapes in the file, not just one
+            poligono_mar = [s.__geo_interface__ for s in sf.shapes()]
+
+        mascara_mar = features.geometry_mask(
+            geometries=poligono_mar,
+            out_shape=formato_matriz,
+            transform=transform,
+            invert=False
+        )
+        
+        raster_delimitado = np.where(mascara_mar, VALOR_MAR, raster_estado)
+
+
         return raster_delimitado
 
-    except Exception as e:
-        print(f"Erro ao aplicar máscara de isolamento: {e}")
+    except Exception as erro:
+        print(f"Erro ao aplicar mascara de isolamento: {erro}")
         return None
-    
+
+
 def carregar_estado(uf: str) -> np.ndarray | None:
     """
     Função principal do Módulo Terreno. Orquestra a leitura dos caminhos, 
