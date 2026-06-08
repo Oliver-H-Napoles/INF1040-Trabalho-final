@@ -31,7 +31,8 @@ def carrega_dados(path_arq: str) -> int:
             O parâmetro "path_arq" tem que ser um caminho válido para um arquivo JSON 
         
         Assertiva de saída:
-            (TODO)
+            A variável global _dados deve estar carregada com a máscara e com a nascente
+            Deve retornar um inteiro indicando o status da execução
     '''
     print("Carregando dados da última execução")
     data: dict
@@ -161,10 +162,10 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
     neighbors: deque[tuple[int, int]] = deque()
     qtd: int = 1 # Já considerando a nascente
 
-    neighbors.append((terreno.shape[0] - 1, terreno.shape[1] - 1)) # Canto inferior direito (conforme especificação)
+    neighbors.append(_dados["nascente"]) # Canto inferior direito (conforme especificação)
     while bool(neighbors):
         x, y = neighbors.popleft()
-        print(f"Expansão para a célula ({x}, {y}) {len(neighbors)} restantes")
+        # print(f"Expansão para a célula ({x}, {y}) {len(neighbors)} restantes")
 
     
         for new_x, new_y in [(x-1,y),(x+1,y),(x,y-1),(x,y+1)]:
