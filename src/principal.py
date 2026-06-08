@@ -3,13 +3,13 @@
 # ==========================================================
 
 # Módulo Validação
-from validacao import (
+from validacao.validacao import (
     valida_uf,
     valida_elevacao
 )
 
 # Módulo Terreno
-from terreno import (
+from terreno.terreno import (
     obter_caminhos_arquivos,
     carregar_dados_topograficos,
     carregar_fronteiras,
@@ -23,12 +23,13 @@ from agua import (
 )
 
 # Módulo Visualização
-from visualizacao import (
+'''
+from visualizacao.visualizacao import (
     projetar_camadas,
     gerar_heatmap,
     plot_layers
 )
-
+'''
 
 # ==========================================================
 # MÓDULO PRINCIPAL
