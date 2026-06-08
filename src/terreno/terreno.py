@@ -136,7 +136,7 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
     """
     print("Aplicando máscara de isolamento")
     VALOR_BARREIRA = 10000
-    VALOR_MAR = 0
+    VALOR_MAR = -1
     try:
         formato_matriz = raster_terreno.shape
 

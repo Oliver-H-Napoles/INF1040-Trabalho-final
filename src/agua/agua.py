@@ -158,28 +158,22 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
 
     # Para o BFS
     neighbors: list[tuple[int, int]] = []
-    visited: list[bool] = [
-        [False] * tam_y
-        for _ in range(tam_x)
-    ]
     qtd: int = 0
 
-    neighbors.append(_dados["nascente"])
+    neighbors.append((terreno.shape[0] - 1, terreno.shape[1] - 1)) # Canto inferior direito (conforme especificação)
     while bool(neighbors):
-        x, y = neighbors.pop(0)
-        if visited[x][y]:
-            continue
+        x, y = neighbors[0]
+        neighbors.pop(0)
+        print(f"Expansão para a célula ({x}, {y}) {len(neighbors)} restantes")
 
-        visited[x][y] = True
-        masc_agua[x][y] = 1
-        qtd += 1
-
-        for new_x in range(max(0,x-1),min(tam_x, x+2)):
-            for new_y in range(max(0, y-1), min(tam_y, y+2)):
-                if (new_x, new_y) == (x,y):
-                    continue
-                if (not visited[new_x][new_y]) and (terreno[new_x][new_y] <= nivel_do_mar):
-                    neighbors.append((new_x, new_y))
+    
+        for new_x, new_y in [(x-1,y),(x+1,y),(x,y-1),(x,y+1)]:
+            if new_x not in range(tam_x) or new_y not in range(tam_y):
+                continue
+            if (masc_agua[new_x][new_y] != 1 and terreno[new_x][new_y] <= nivel_do_mar):
+                masc_agua[new_x][new_y] = 1
+                qtd += 1
+                neighbors.append((new_x, new_y))
 
     
     return float(qtd/(tam_x * tam_y) * 100)

@@ -10,12 +10,7 @@ from validacao.validacao import (
 )
 
 # Módulo Terreno
-from terreno.terreno import (
-    obter_caminhos_arquivos,
-    carregar_dados_topograficos,
-    carregar_fronteiras,
-    aplicar_mascara_isolamento
-)
+from terreno.terreno import carregar_estado
 
 # Módulo Água
 from agua import (
@@ -115,28 +110,7 @@ def main(uf):
     # Terreno
     # ------------------------------------------------------
 
-    caminho_tif, caminho_shp = obter_caminhos_arquivos(
-        uf_alvo
-    )
-
-    try:
-        raster_terreno, transform = carregar_dados_topograficos(
-            caminho_tif
-        )
-    except Exception as e:
-        print(f"Erro ao carregar dados topográficos: {e}")
-        return
-
-    poligono_fronteira = carregar_fronteiras(
-        caminho_shp,
-        uf_alvo
-    )
-
-    raster_isolado = aplicar_mascara_isolamento(
-        raster_terreno,
-        poligono_fronteira,
-        transform
-    )
+    raster_isolado = carregar_estado(uf_alvo)
 
     # ------------------------------------------------------
     # Água
