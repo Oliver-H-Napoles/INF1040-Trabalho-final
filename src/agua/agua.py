@@ -117,14 +117,14 @@ def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray:
     return deepcopy(_dados["mascara"])
 
 
-def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_mar: float) -> float:
+def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_mar: int) -> float:
     '''
         Objetivo: Expandir a máscara d`água para ver o percentual de inundação dado certo nível do mar
 
         @params:
             "terreno" -> Numpy 2-dimensional array, em que cada célula consta os valores de altitude daquela região
             "masc_agua" -> Máscara criada pela função "cria_mascara_agua" 
-            "nivel_do_mar" -> Float que indica o nível de inundação a ser simulado
+            "nivel_do_mar" -> Inteiro que indica o nível de inundação a ser simulado
 
         @returns:
             -1.0 -> Erro em relação ao tamanho das matrizes "terreno" e "masc_agua";
@@ -135,7 +135,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
         Assertivas de entradas:
             O parâmetro "terreno" deve seguir todas as assertivas do raster;
             O parâmetro "masc_agua" deve seguir todas as assertivas da máscara d`água, definido na função "cria_mascara_agua";
-            O parâmetro de "nivel_do_mar" é um float positivo, não nulo.
+            O parâmetro de "nivel_do_mar" é um inteiro positivo, não nulo.
         
         Assertivas de saída:
             O retorno dessa função será um float não nulo;
@@ -156,28 +156,20 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
 
     # Para o BFS
     neighbors: list[tuple[int, int]] = []
-    visited: list[bool] = [
-        [False] * tam_y
-        for _ in range(tam_x)
-    ]
-    qtd: int = 0
+    qtd: int = 1
+    print(_dados["nascente"])
 
     neighbors.append(_dados["nascente"])
     while bool(neighbors):
         x, y = neighbors.pop(0)
-        if visited[x][y]:
-            continue
 
-        visited[x][y] = True
-        masc_agua[x][y] = 1
-        qtd += 1
-
-        for new_x in range(max(0,x-1),min(tam_x, x+2)):
-            for new_y in range(max(0, y-1), min(tam_y, y+2)):
-                if (new_x, new_y) == (x,y):
+        for (new_x, new_y) in [(x-1,y),(x+1,y),(x,y-1),(x,y+1)]:
+                if (new_x not in range(tam_x)) or (new_y not in range(tam_y)):
                     continue
-                if (not visited[new_x][new_y]) and (terreno[new_x][new_y] <= nivel_do_mar):
+                if (masc_agua[new_x][new_y] == 0) and (terreno[new_x][new_y] <= nivel_do_mar):
                     neighbors.append((new_x, new_y))
+                    masc_agua[new_x][new_y] = 1
+                    qtd += 1
 
     
     return float(qtd/(tam_x * tam_y) * 100)
