@@ -1,6 +1,7 @@
 __all__ = ["cria_mascara_agua", "expandir_mascara_agua", "carrega_dados"]
 
 # Import das bibliotecas necessárias
+from collections import deque
 from copy import deepcopy
 import numpy as np
 from json import load
@@ -155,16 +156,15 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
         return -3.0
 
     # Para o BFS
-    neighbors: list[tuple[int, int]] = []
+    neighbors: deque[tuple[int, int]] = deque()
     qtd: int = 1
-    print(_dados["nascente"])
 
     neighbors.append(_dados["nascente"])
-    while bool(neighbors):
-        x, y = neighbors.pop(0)
+    while neighbors:
+        x, y = neighbors.popleft()
 
         for (new_x, new_y) in [(x-1,y),(x+1,y),(x,y-1),(x,y+1)]:
-                if (new_x not in range(tam_x)) or (new_y not in range(tam_y)):
+                if not (0 <= new_x < tam_x and 0 <= new_y < tam_y):
                     continue
                 if (masc_agua[new_x][new_y] == 0) and (terreno[new_x][new_y] <= nivel_do_mar):
                     neighbors.append((new_x, new_y))
