@@ -145,7 +145,7 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
 
         # CORREÇÃO: Uso do __geo_interface__ para compatibilidade com rasterio
         mascara_booleana = features.geometry_mask(
-            geometries=[poligono_fronteira.__geo_interface__], 
+            geometries=[geometria], 
             out_shape=formato_matriz,
             transform=transform,
             invert=False
