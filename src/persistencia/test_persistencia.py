@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 
 # Importa o seu módulo. Certifique-se de que o arquivo se chama persistencia.py
-import persistencia
+from persistencia import persistencia
 
 # ===========================================================================
 # FIXTURE: PREPARAÇÃO DO AMBIENTE DE TESTES
