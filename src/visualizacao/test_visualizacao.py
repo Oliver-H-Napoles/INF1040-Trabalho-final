@@ -23,6 +23,7 @@ from visualizacao.visualizacao import projetar_camadas, gerar_heatmap, plot_laye
 # =============================================================================
 
 def test_projetar_camadas_ok_sucesso():
+    """Terreno e máscara válidos de mesmo shape -> 0 (êxito)."""
     terreno = np.array([[1, 2], [3, 4]])
     masc_agua = np.array([[0, 1], [0, 1]])
     with patch("visualizacao.visualizacao.plt"):
@@ -30,28 +31,34 @@ def test_projetar_camadas_ok_sucesso():
 
 
 def test_projetar_camadas_erro_terreno_none():
+    """Terreno None -> 1 (terreno inválido)."""
     assert projetar_camadas(None, np.array([[0, 1], [0, 1]])) == 1
 
 
 def test_projetar_camadas_erro_terreno_sem_shape():
+    """Terreno sem 'shape' (lista) -> 1 (terreno inválido)."""
     assert projetar_camadas([[1, 2], [3, 4]], np.array([[0, 1], [0, 1]])) == 1
 
 
 def test_projetar_camadas_erro_mascara_none():
+    """Máscara None -> 2 (máscara inválida)."""
     assert projetar_camadas(np.array([[1, 2], [3, 4]]), None) == 2
 
 
 def test_projetar_camadas_erro_mascara_sem_shape():
+    """Máscara sem 'shape' (lista) -> 2 (máscara inválida)."""
     assert projetar_camadas(np.array([[1, 2], [3, 4]]), [[0, 1]]) == 2
 
 
 def test_projetar_camadas_erro_dimensoes_incompativeis():
+    """Terreno e máscara com shapes diferentes -> 3 (dimensões incompatíveis)."""
     terreno = np.array([[1, 2], [3, 4]])
     masc_agua = np.array([[0, 1, 0]])
     assert projetar_camadas(terreno, masc_agua) == 3
 
 
 def test_projetar_camadas_erro_falha_na_renderizacao():
+    """Falha ao renderizar (plt.show levanta exceção) -> 4 (erro inesperado)."""
     terreno = np.array([[1, 2], [3, 4]])
     masc_agua = np.array([[0, 1], [0, 1]])
     with patch("visualizacao.visualizacao.plt") as mock_plt:
@@ -64,6 +71,7 @@ def test_projetar_camadas_erro_falha_na_renderizacao():
 # =============================================================================
 
 def test_gerar_heatmap_ok_sucesso():
+    """Matriz válida -> retorna o objeto de figura (não None)."""
     mapa = np.array([[1, 2], [3, 4]])
     fig_fake, ax_fake = MagicMock(name="fig"), MagicMock(name="ax")
     with patch("visualizacao.visualizacao.plt") as mock_plt:
@@ -72,18 +80,22 @@ def test_gerar_heatmap_ok_sucesso():
 
 
 def test_gerar_heatmap_erro_mapa_none():
+    """Mapa None -> None (erro)."""
     assert gerar_heatmap(None) is None
 
 
 def test_gerar_heatmap_erro_mapa_sem_shape():
+    """Mapa sem 'shape' (lista) -> None (erro)."""
     assert gerar_heatmap([[1, 2], [3, 4]]) is None
 
 
 def test_gerar_heatmap_erro_mapa_vazio():
+    """Mapa vazio (size 0) -> None (erro)."""
     assert gerar_heatmap(np.array([])) is None
 
 
 def test_gerar_heatmap_erro_falha_na_renderizacao():
+    """Falha ao renderizar (plt.subplots levanta exceção) -> None (erro)."""
     mapa = np.array([[1, 2], [3, 4]])
     with patch("visualizacao.visualizacao.plt") as mock_plt:
         mock_plt.subplots.side_effect = RuntimeError("falha no backend")
@@ -95,16 +107,19 @@ def test_gerar_heatmap_erro_falha_na_renderizacao():
 # =============================================================================
 
 def test_plot_layers_ok_sucesso():
+    """Objeto de plot válido -> 0 (êxito) e show() chamado."""
     plot_obj = MagicMock()
     assert plot_layers(plot_obj) == 0
     plot_obj.show.assert_called_once()
 
 
 def test_plot_layers_erro_objeto_none():
+    """Objeto de plot None -> 1 (objeto inválido)."""
     assert plot_layers(None) == 1
 
 
 def test_plot_layers_erro_falha_ao_exibir():
+    """Falha ao exibir (show levanta exceção) -> 2 (erro inesperado)."""
     plot_obj = MagicMock()
     plot_obj.show.side_effect = RuntimeError("falha ao exibir")
     assert plot_layers(plot_obj) == 2

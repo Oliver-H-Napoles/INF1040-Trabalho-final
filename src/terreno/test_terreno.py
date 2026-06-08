@@ -48,6 +48,7 @@ def _context_manager(valor_entrada):
 # =============================================================================
 
 def test_obter_caminhos_ok_uf_valida():
+    """UF presente no JSON -> tupla com os caminhos de topo e fronteira."""
     mapa = {"RS": {"arquivo_topo": "RS_mosaico.tif", "arquivo_front": "front_RS.shp"}}
     with patch("builtins.open", mock_open()), \
             patch.object(terreno.json, "load", return_value=mapa):
@@ -58,6 +59,7 @@ def test_obter_caminhos_ok_uf_valida():
 
 
 def test_obter_caminhos_ok_normaliza_uf():
+    """UF com espaços/minúsculas ('  rs ') é normalizada -> caminho correto."""
     mapa = {"RS": {"arquivo_topo": "RS_mosaico.tif", "arquivo_front": "front_RS.shp"}}
     with patch("builtins.open", mock_open()), \
             patch.object(terreno.json, "load", return_value=mapa):
@@ -67,12 +69,14 @@ def test_obter_caminhos_ok_normaliza_uf():
 
 
 def test_obter_caminhos_erro_uf_ausente():
+    """UF ausente do JSON ('XX') -> (None, None)."""
     with patch("builtins.open", mock_open()), \
             patch.object(terreno.json, "load", return_value={}):
         assert obter_caminhos_arquivos("XX") == (None, None)
 
 
 def test_obter_caminhos_erro_arquivo_json_inexistente():
+    """Falha ao abrir o estados.json -> (None, None)."""
     with patch("builtins.open", side_effect=OSError("sem estados.json")):
         assert obter_caminhos_arquivos("RS") == (None, None)
 
@@ -82,6 +86,7 @@ def test_obter_caminhos_erro_arquivo_json_inexistente():
 # =============================================================================
 
 def test_carregar_topografico_ok_arquivo_integro():
+    """Raster íntegro (mock) -> tupla (matriz, transform) e cache preenchido."""
     raster_fake = np.array([[1.0, 2.0], [3.0, 4.0]])
     dataset = MagicMock()
     dataset.read.return_value = raster_fake
@@ -97,6 +102,7 @@ def test_carregar_topografico_ok_arquivo_integro():
 
 
 def test_carregar_topografico_erro_arquivo_invalido():
+    """Erro ao abrir o raster (corrompido/inexistente) -> (None, None)."""
     with patch.object(terreno.rasterio, "open", side_effect=Exception("corrompido")):
         assert carregar_dados_topograficos("falso.tif") == (None, None)
 
@@ -106,6 +112,7 @@ def test_carregar_topografico_erro_arquivo_invalido():
 # =============================================================================
 
 def test_carregar_fronteiras_ok_uf_encontrada():
+    """UF presente na tabela do shapefile -> polígono correspondente e cache."""
     poligono_fake = MagicMock(name="poligono")
     sf = MagicMock()
     sf.records.return_value = [["0", "Sao Paulo", "SP"], ["1", "Rio Grande do Sul", "RS"]]
@@ -120,6 +127,7 @@ def test_carregar_fronteiras_ok_uf_encontrada():
 
 
 def test_carregar_fronteiras_erro_uf_ausente_na_tabela():
+    """UF não encontrada na tabela do shapefile -> None."""
     sf = MagicMock()
     sf.records.return_value = [["0", "Sao Paulo", "SP"]]
 
@@ -128,6 +136,7 @@ def test_carregar_fronteiras_erro_uf_ausente_na_tabela():
 
 
 def test_carregar_fronteiras_erro_arquivo_invalido():
+    """Erro ao abrir o shapefile (formato/caminho inválido) -> None."""
     with patch.object(terreno.shapefile, "Reader", side_effect=Exception("nao e shapefile")):
         assert carregar_fronteiras("falso.shp", "RS") is None
 
@@ -137,6 +146,7 @@ def test_carregar_fronteiras_erro_arquivo_invalido():
 # =============================================================================
 
 def test_aplicar_mascara_ok_aplica_barreira():
+    """Polígono válido -> matriz com barreira (10000) fora e dados preservados dentro."""
     raster = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
     poligono = MagicMock()
     poligono.__geo_interface__ = {"type": "Polygon", "coordinates": []}
@@ -165,6 +175,7 @@ def test_aplicar_mascara_ok_aplica_barreira():
 
 
 def test_aplicar_mascara_erro_falha_geometria():
+    """Falha no cálculo da geometria (geometry_mask) -> None."""
     raster = np.array([[1.0, 2.0], [3.0, 4.0]])
     poligono = MagicMock()
     poligono.__geo_interface__ = {"type": "Polygon"}
@@ -178,6 +189,7 @@ def test_aplicar_mascara_erro_falha_geometria():
 # =============================================================================
 
 def test_carregar_estado_ok_fluxo_completo():
+    """Todas as etapas bem-sucedidas -> matriz isolada final."""
     matriz_final = np.array([[10000, 1.0], [2.0, -1.0]])
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
             patch.object(terreno, "carregar_dados_topograficos", return_value=(np.zeros((2, 2)), "TR")), \
@@ -189,17 +201,20 @@ def test_carregar_estado_ok_fluxo_completo():
 
 
 def test_carregar_estado_erro_falha_nos_caminhos():
+    """Falha ao obter caminhos (UF inexistente) -> None (curto-circuito)."""
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=(None, None)):
         assert carregar_estado("XX") is None
 
 
 def test_carregar_estado_erro_falha_no_raster():
+    """Caminhos OK, mas falha ao carregar o raster -> None (curto-circuito)."""
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
             patch.object(terreno, "carregar_dados_topograficos", return_value=(None, None)):
         assert carregar_estado("RS") is None
 
 
 def test_carregar_estado_erro_falha_na_fronteira():
+    """Raster OK, mas falha ao carregar a fronteira -> None (curto-circuito)."""
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
             patch.object(terreno, "carregar_dados_topograficos", return_value=(np.zeros((2, 2)), "TR")), \
             patch.object(terreno, "carregar_fronteiras", return_value=None):
@@ -207,6 +222,7 @@ def test_carregar_estado_erro_falha_na_fronteira():
 
 
 def test_carregar_estado_erro_falha_no_isolamento():
+    """Fronteira OK, mas falha ao aplicar o isolamento -> None."""
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
             patch.object(terreno, "carregar_dados_topograficos", return_value=(np.zeros((2, 2)), "TR")), \
             patch.object(terreno, "carregar_fronteiras", return_value=MagicMock()), \

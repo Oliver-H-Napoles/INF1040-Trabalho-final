@@ -24,11 +24,13 @@ import principal
 # =============================================================================
 
 def test_obter_uf_ok_retorna_sigla():
+    """Usuário digita 'RS' -> retorna 'RS'."""
     with patch("builtins.input", return_value="RS"):
         assert principal.obter_uf() == "RS"
 
 
 def test_obter_uf_ok_normaliza_espacos_e_maiusculas():
+    """Usuário digita '  rj  ' -> normaliza para 'RJ'."""
     with patch("builtins.input", return_value="  rj  "):
         assert principal.obter_uf() == "RJ"
 
@@ -38,11 +40,13 @@ def test_obter_uf_ok_normaliza_espacos_e_maiusculas():
 # =============================================================================
 
 def test_obter_elevacao_ok_inteiro():
+    """Usuário digita '42' -> retorna o inteiro 42."""
     with patch("builtins.input", return_value="42"):
         assert principal.obter_elevacao() == 42
 
 
 def test_obter_elevacao_erro_entrada_nao_inteira():
+    """Usuário digita 'abc' (não-inteiro) -> levanta ValueError."""
     with patch("builtins.input", return_value="abc"):
         with pytest.raises(ValueError):
             principal.obter_elevacao()
@@ -68,11 +72,13 @@ def _dependencias_ok():
 
 
 def test_main_ok_fluxo_completo():
+    """Todas as etapas bem-sucedidas -> 0 (êxito)."""
     with patch.multiple(principal, **_dependencias_ok()):
         assert principal.main("RS") == 0
 
 
 def test_main_erro_uf_invalida():
+    """valida_uf reprova a UF -> 1 (UF inválida)."""
     deps = _dependencias_ok()
     deps["valida_uf"] = MagicMock(return_value=1)
     with patch.multiple(principal, **deps):
@@ -80,6 +86,7 @@ def test_main_erro_uf_invalida():
 
 
 def test_main_erro_elevacao_nao_inteira():
+    """obter_elevacao levanta ValueError -> 2 (elevação inválida)."""
     deps = _dependencias_ok()
     deps["obter_elevacao"] = MagicMock(side_effect=ValueError("apenas inteiros"))
     with patch.multiple(principal, **deps):
@@ -87,6 +94,7 @@ def test_main_erro_elevacao_nao_inteira():
 
 
 def test_main_erro_elevacao_invalida():
+    """valida_elevacao reprova o valor -> 2 (elevação inválida)."""
     deps = _dependencias_ok()
     deps["obter_elevacao"] = MagicMock(return_value=-5)
     deps["valida_elevacao"] = MagicMock(return_value=1)
@@ -95,6 +103,7 @@ def test_main_erro_elevacao_invalida():
 
 
 def test_main_erro_falha_no_terreno():
+    """carregar_estado retorna None -> 3 (falha no terreno)."""
     deps = _dependencias_ok()
     deps["carregar_estado"] = MagicMock(return_value=None)
     with patch.multiple(principal, **deps):
@@ -102,6 +111,7 @@ def test_main_erro_falha_no_terreno():
 
 
 def test_main_erro_falha_ao_criar_mascara():
+    """cria_mascara_agua retorna None -> 4 (falha na simulação da água)."""
     deps = _dependencias_ok()
     deps["cria_mascara_agua"] = MagicMock(return_value=None)
     with patch.multiple(principal, **deps):
@@ -109,6 +119,7 @@ def test_main_erro_falha_ao_criar_mascara():
 
 
 def test_main_erro_falha_ao_expandir_mascara():
+    """expandir_mascara_agua retorna None -> 4 (falha na simulação da água)."""
     deps = _dependencias_ok()
     deps["expandir_mascara_agua"] = MagicMock(return_value=None)
     with patch.multiple(principal, **deps):
