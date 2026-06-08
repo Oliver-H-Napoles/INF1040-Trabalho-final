@@ -154,15 +154,18 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
     try:
         formato_matriz = raster_terreno.shape
         
-        # CORREÇÃO: Uso do __geo_interface__ para compatibilidade com rasterio
+        # Converte para dict Python puro, eliminando arrays numpy nas coordenadas
+        geometria = json.loads(json.dumps(poligono_fronteira.__geo_interface__))
+        
         mascara_booleana = features.geometry_mask(
-            geometries=[poligono_fronteira.__geo_interface__], 
+            geometries=[geometria], 
             out_shape=formato_matriz,
             transform=transform,
             invert=False
         )
         
         raster_delimitado = np.where(mascara_booleana, VALOR_BARREIRA, raster_terreno)
+        _arquivos_carregados["raster_delimitados"].append(raster_delimitado.copy())
         return raster_delimitado
 
     except Exception as e:

@@ -13,12 +13,13 @@ from terreno import (
 )
 
 # --- CONFIGURAÇÃO DE DIRETÓRIOS ---
-DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))
-DIRETORIO_RAIZ = os.path.dirname(DIRETORIO_ATUAL) 
-DIRETORIO_DATA = os.path.join(DIRETORIO_RAIZ, "data")
+DIRETORIO_ATUAL = os.path.dirname(os.path.abspath(__file__))  # .../src/terreno
+DIRETORIO_SRC   = os.path.dirname(DIRETORIO_ATUAL)            # .../src
+DIRETORIO_RAIZ  = os.path.dirname(DIRETORIO_SRC)              # .../ (raiz do projeto)
+DIRETORIO_DATA  = os.path.join(DIRETORIO_RAIZ, "data")        # .../data  ✓
 
-ESTADO_TESTE = "RS"
-ESTADO_DISTANTE = "SP" # Usado no Caso 2 da máscara de isolamento
+ESTADO_TESTE = "SP"
+ESTADO_DISTANTE = "RS" # Usado no Caso 2 da máscara de isolamento
 
 @pytest.fixture(autouse=True)
 def configurar_diretorio_e_limpar_cache(monkeypatch):
