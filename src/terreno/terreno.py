@@ -113,6 +113,7 @@ def carregar_fronteiras(caminho_arq_front: str, uf_alvo: str):
     except Exception as e:
         raise e
 
+
 def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
     """
     Sobrepõe o polígono de fronteira sobre o raster topográfico para isolar a área de simulação.
@@ -135,6 +136,7 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
     """
     print("Aplicando máscara de isolamento")
     VALOR_BARREIRA = 10000
+    VALOR_MAR = 0
     try:
         formato_matriz = raster_terreno.shape
 
@@ -146,7 +148,22 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
             invert=False
         )
         
-        raster_delimitado = np.where(mascara_booleana, VALOR_BARREIRA, raster_terreno)
+        raster_estado = np.where(mascara_booleana, VALOR_BARREIRA, raster_terreno)
+
+        with shapefile.Reader("data/coastline.shp") as sf:
+            # 1. Grab the geo_interface for ALL shapes in the file, not just one
+            poligono_mar = [s.__geo_interface__ for s in sf.shapes()]
+
+        mascara_mar = features.geometry_mask(
+            geometries=poligono_mar,
+            out_shape=formato_matriz,
+            transform=transform,
+            invert=False
+        )
+        
+        raster_delimitado = np.where(mascara_mar, VALOR_MAR, raster_estado)
+
+
         return raster_delimitado
 
     except Exception as e:
