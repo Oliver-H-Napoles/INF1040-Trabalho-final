@@ -135,7 +135,7 @@ def main(uf):
     )
 
     print(
-        f"\nÁrea inundada: {area_inundada:.2f}%"
+        f"\nÁrea inundada: {area_inundada*900/1000000:.2f} km² ({area_inundada} células)"
     )
 
     # ------------------------------------------------------

@@ -142,7 +142,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
             O parâmetro de "nivel_do_mar" é um float positivo, não nulo.
         
         Assertivas de saída:
-            O retorno dessa função será um float não nulo;
+            O retorno dessa função será um int não nulo;
     '''
     print("Expandindo máscara de água")
     if nivel_do_mar <= 0:
@@ -173,8 +173,8 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
                 continue
             if (masc_agua[new_x][new_y] == 0 and terreno[new_x][new_y] <= nivel_do_mar):
                 masc_agua[new_x][new_y] = 1
-                qtd += 1
+                if terreno[new_x][new_y] > -1:
+                    qtd += 1 
                 neighbors.append((new_x, new_y))
 
-    
-    return float(qtd/(tam_x * tam_y) * 100)
+    return qtd
