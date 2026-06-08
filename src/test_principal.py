@@ -62,12 +62,18 @@ def _dependencias_ok():
         valida_uf=MagicMock(return_value=0),
         obter_elevacao=MagicMock(return_value=5),
         valida_elevacao=MagicMock(return_value=0),
-        carregar_estado=MagicMock(return_value=np.zeros((3, 3))),
+        isolar_estado=MagicMock(return_value=np.zeros((3, 3))),
         cria_mascara_agua=MagicMock(return_value=np.zeros((3, 3))),
         expandir_mascara_agua=MagicMock(return_value=100),
         projetar_camadas=MagicMock(return_value=0),
         gerar_heatmap=MagicMock(return_value=MagicMock()),
         plot_layers=MagicMock(return_value=0),
+
+        carregar_estado= MagicMock(return_value={"state": 0, "uf": None, "elevacao": None, "files": {}, "metadata": {}}),
+        carregar_dados_salvos=MagicMock(return_value={"_metadata": {}}),
+        avancar_etapa=MagicMock(),
+        resetar_estado=MagicMock(return_value={"state": 0, "uf": None, "elevacao": None, "files": {}, "metadata": {}}),
+
     )
 
 
@@ -103,9 +109,9 @@ def test_main_erro_elevacao_invalida():
 
 
 def test_main_erro_falha_no_terreno():
-    """carregar_estado retorna None -> 3 (falha no terreno)."""
+    """isolar_estado retorna None -> 3 (falha no terreno)."""
     deps = _dependencias_ok()
-    deps["carregar_estado"] = MagicMock(return_value=None)
+    deps["isolar_estado"] = MagicMock(return_value=None)
     with patch.multiple(principal, **deps):
         assert principal.main("RS") == 3
 
@@ -124,3 +130,62 @@ def test_main_erro_falha_ao_expandir_mascara():
     deps["expandir_mascara_agua"] = MagicMock(return_value=None)
     with patch.multiple(principal, **deps):
         assert principal.main("RS") == 4
+
+# =============================================================================
+# Testes da Máquina de Estados (Orquestração da Persistência)
+# =============================================================================
+
+def test_main_ok_pula_etapa_terreno_se_estado_avancado():
+    """
+    Se o state.json indicar que a Etapa 1 (terreno) já foi feita,
+    a função isolar_estado NÃO deve ser chamada novamente.
+    """
+    deps = _dependencias_ok()
+    
+    # Simulamos que o programa já rodou antes para o 'RS' e parou na etapa 1
+    deps["carregar_estado"] = MagicMock(return_value={
+        "state": 1, 
+        "uf": "RS", 
+        "elevacao": 5, 
+        "files": {}, 
+        "metadata": {}
+    })
+    
+    # Simulamos o carregamento dos dados que já estariam no disco
+    deps["carregar_dados_salvos"] = MagicMock(return_value={
+        "raster_isolado": np.zeros((3, 3)),
+        "_metadata": {}
+    })
+
+    with patch.multiple(principal, **deps):
+        assert principal.main("RS") == 0
+        
+        # A PROVA: O módulo de terreno não foi acionado, economizando processamento!
+        deps["isolar_estado"].assert_not_called()
+
+
+def test_main_ok_reseta_estado_se_uf_diferente():
+    """
+    Se o state.json tiver uma UF (ex: RJ) e o usuário pedir outra (ex: RS),
+    o programa deve chamar resetar_estado() para começar do zero.
+    """
+    deps = _dependencias_ok()
+    
+    # Simulamos que a execução anterior foi no Rio de Janeiro (RJ)
+    deps["carregar_estado"] = MagicMock(return_value={
+        "state": 2, 
+        "uf": "RJ", 
+        "elevacao": 5, 
+        "files": {}, 
+        "metadata": {}
+    })
+
+    with patch.multiple(principal, **deps):
+        # O usuário agora digitou RS
+        assert principal.main("RS") == 0
+        
+        # A PROVA: O orquestrador percebeu a mudança e mandou limpar tudo!
+        deps["resetar_estado"].assert_called_once()
+        
+        # Como o estado foi resetado, ele teve que recalcular o terreno do zero
+        deps["isolar_estado"].assert_called_once()

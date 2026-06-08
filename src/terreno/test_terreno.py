@@ -21,7 +21,7 @@ from terreno import (
     carregar_dados_topograficos,
     carregar_fronteiras,
     aplicar_mascara_isolamento,
-    carregar_estado,
+    isolar_estado,
     _arquivos_carregados,
 )
 
@@ -185,46 +185,46 @@ def test_aplicar_mascara_erro_falha_geometria():
 
 
 # =============================================================================
-# carregar_estado  (orquestração -> ndarray | None)
+# isolar_estado  (orquestração -> ndarray | None)
 # =============================================================================
 
-def test_carregar_estado_ok_fluxo_completo():
+def test_isolar_estado_ok_fluxo_completo():
     """Todas as etapas bem-sucedidas -> matriz isolada final."""
     matriz_final = np.array([[10000, 1.0], [2.0, -1.0]])
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
             patch.object(terreno, "carregar_dados_topograficos", return_value=(np.zeros((2, 2)), "TR")), \
             patch.object(terreno, "carregar_fronteiras", return_value=MagicMock()), \
             patch.object(terreno, "aplicar_mascara_isolamento", return_value=matriz_final):
-        resultado = carregar_estado("RS")
+        resultado = isolar_estado("RS")
 
     assert np.array_equal(resultado, matriz_final)
 
 
-def test_carregar_estado_erro_falha_nos_caminhos():
+def test_isolar_estado_erro_falha_nos_caminhos():
     """Falha ao obter caminhos (UF inexistente) -> None (curto-circuito)."""
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=(None, None)):
-        assert carregar_estado("XX") is None
+        assert isolar_estado("XX") is None
 
 
-def test_carregar_estado_erro_falha_no_raster():
+def test_isolar_estado_erro_falha_no_raster():
     """Caminhos OK, mas falha ao carregar o raster -> None (curto-circuito)."""
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
             patch.object(terreno, "carregar_dados_topograficos", return_value=(None, None)):
-        assert carregar_estado("RS") is None
+        assert isolar_estado("RS") is None
 
 
-def test_carregar_estado_erro_falha_na_fronteira():
+def test_isolar_estado_erro_falha_na_fronteira():
     """Raster OK, mas falha ao carregar a fronteira -> None (curto-circuito)."""
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
             patch.object(terreno, "carregar_dados_topograficos", return_value=(np.zeros((2, 2)), "TR")), \
             patch.object(terreno, "carregar_fronteiras", return_value=None):
-        assert carregar_estado("RS") is None
+        assert isolar_estado("RS") is None
 
 
-def test_carregar_estado_erro_falha_no_isolamento():
+def test_isolar_estado_erro_falha_no_isolamento():
     """Fronteira OK, mas falha ao aplicar o isolamento -> None."""
     with patch.object(terreno, "obter_caminhos_arquivos", return_value=("t.tif", "f.shp")), \
             patch.object(terreno, "carregar_dados_topograficos", return_value=(np.zeros((2, 2)), "TR")), \
             patch.object(terreno, "carregar_fronteiras", return_value=MagicMock()), \
             patch.object(terreno, "aplicar_mascara_isolamento", return_value=None):
-        assert carregar_estado("RS") is None
+        assert isolar_estado("RS") is None
