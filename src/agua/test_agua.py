@@ -50,7 +50,7 @@ def teste_CriaMascara4():
     )
     assert np.array_equal(cria_mascara_agua(3,2,3), ans) == True
 
-def teste_CriaMascara11():
+def teste_CriaMascara5():
     ans: np.ndarray = np.array(
         [
             [0, 0, 0],
@@ -62,28 +62,28 @@ def teste_CriaMascara11():
     assert np.array_equal(cria_mascara_agua(4,3,2), ans) == True
     
 # Casos em que o tamanho da matriz é invalido
-def teste_CriaMascara5():
+def teste_CriaMascara6():
     ans = np.array([4], dtype=float)
     assert np.array_equal(cria_mascara_agua(-1, 0, 0), ans) == True
 
-def teste_CriaMascara6():
+def teste_CriaMascara7():
     ans = np.array([4], dtype=float)
     assert np.array_equal(cria_mascara_agua(0, 0, 0), ans) == True
 
-def teste_CriaMascara7():
+def teste_CriaMascara8():
     ans = np.array([4], dtype=float)
     assert np.array_equal(cria_mascara_agua(10, -2, 0), ans) == True
 
 # Casos em que a fonte d`água não está no intervalo 0:3
-def teste_CriaMascara8():
+def teste_CriaMascara9():
     ans = np.array([3], dtype=float)
     assert np.array_equal(cria_mascara_agua(10, 10, 5), ans) == True
 
-def teste_CriaMascara9():
+def teste_CriaMascara10():
     ans = np.array([3], dtype=float)
     assert np.array_equal(cria_mascara_agua(10, 10, -1), ans) == True
 
-def teste_CriaMascara10():
+def teste_CriaMascara11():
     ans = np.array([3], dtype=float)
     assert np.array_equal(cria_mascara_agua(10, 10, 4), ans) == True
 
@@ -118,7 +118,7 @@ def teste_ExpandirMascara2():
 
     assert expandir_mascara_agua(terreno, cria_mascara_agua(3,3,2), 3) == pytest.approx(ans)
 
-def teste_ExpandirMascara6():
+def teste_ExpandirMascara3():
     terreno = np.array(
         [
             [5, 4, 5.3],
@@ -132,7 +132,7 @@ def teste_ExpandirMascara6():
     assert expandir_mascara_agua(terreno, cria_mascara_agua(4,3,2), 3.0) == pytest.approx(ans)
 
 # Casos em que o tamanho das matrizes é diferente
-def teste_ExpandirMascara3():
+def teste_ExpandirMascara4():
     terreno = np.array(
         [
             [5, 1, 2],
@@ -143,7 +143,7 @@ def teste_ExpandirMascara3():
 
     assert expandir_mascara_agua(terreno, cria_mascara_agua(2,2,2), 3) == pytest.approx(-1.0)
 
-def teste_ExpandirMascara4():
+def teste_ExpandirMascara5():
     terreno = np.array(
         [
             [5, 1, 2, 3],
@@ -155,7 +155,7 @@ def teste_ExpandirMascara4():
     assert expandir_mascara_agua(terreno, cria_mascara_agua(3,3,2), 3) == pytest.approx(-1.0)
 
 # Caso em que o nível do mar é nulo
-def teste_ExpandirMascara5():
+def teste_ExpandirMascara6():
     terreno = np.array(
         [
             [5, 1, 2],
