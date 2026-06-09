@@ -205,11 +205,6 @@ def carregar_dados_salvos(estado: dict) -> dict:
     dados["_metadata"] = estado.get("metadata", {})
     return dados
 
-
-# ---------------------------------------------------------------------------
-# I/O genérico de arquivos (numpy ou pickle)
-# ---------------------------------------------------------------------------
-
 def salvar_arquivo(caminho: str, dado: Any) -> None:
     """
     Salva 'dado' no caminho indicado baseando-se na extensão do arquivo.
@@ -273,7 +268,6 @@ def _carregar_arquivo(caminho: str) -> Any:
             return pickle.load(f)
 
     raise ValueError(f"[persistencia] Extensão não suportada: '{caminho}'.")
-
 
 # ---------------------------------------------------------------------------
 # Utilitários

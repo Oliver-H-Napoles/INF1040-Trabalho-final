@@ -65,7 +65,6 @@ def obter_uf() -> str:
 
     return uf
 
-
 def obter_elevacao() -> int:
     """
     Captura a elevação informada pelo usuário.
@@ -89,7 +88,6 @@ def obter_elevacao() -> int:
         raise ValueError(
             "Apenas números inteiros são aceitos."
         )
-
 
 # ==========================================================
 # FLUXO PRINCIPAL DA APLICAÇÃO
@@ -253,7 +251,6 @@ def main(uf: str) -> int:
  
     print("\nSimulação concluída com sucesso.")
     return 0
-
 
 if __name__ == "__main__":
      
