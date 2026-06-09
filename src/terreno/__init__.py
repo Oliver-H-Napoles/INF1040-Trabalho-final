@@ -3,7 +3,7 @@ from .terreno import (
     carregar_dados_topograficos,
     carregar_fronteiras,
     aplicar_mascara_isolamento,
-    carregar_estado,
+    isolar_estado,
     _arquivos_carregados,
 )
 

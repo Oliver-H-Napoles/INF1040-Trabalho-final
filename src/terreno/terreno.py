@@ -6,7 +6,7 @@ import json
 from typing import Tuple, Any
 
 __all__ = [
-    "carregar_estado",
+    "isolar_estado",
 ]
 
 _arquivos_carregados = {
@@ -142,10 +142,10 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
     VALOR_MAR = -1
     try:
         formato_matriz = raster_terreno.shape
+        geometria_fronteira = poligono_fronteira.__geo_interface__
 
-        # CORREÇÃO: Uso do __geo_interface__ para compatibilidade com rasterio
         mascara_booleana = features.geometry_mask(
-            geometries=[geometria], 
+            geometries=[geometria_fronteira], 
             out_shape=formato_matriz,
             transform=transform,
             invert=False
@@ -174,7 +174,7 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
         return None
 
 
-def carregar_estado(uf: str) -> np.ndarray | None:
+def isolar_estado(uf: str) -> np.ndarray | None:
     """
     Função principal do Módulo Terreno. Orquestra a leitura dos caminhos, 
     o carregamento da topografia, a extração das fronteiras e a aplicação do isolamento.

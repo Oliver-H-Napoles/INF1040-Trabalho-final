@@ -6,3 +6,5 @@ __pycache__/
 *.pyc
 __pycache__/
 .pytest_cache/
+data/persistencia/raster_isolado.npy
+data/persistencia/mascara_agua.npy
