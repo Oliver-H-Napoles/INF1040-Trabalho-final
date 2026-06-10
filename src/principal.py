@@ -34,6 +34,7 @@ from persistencia.persistencia import (
     ETAPA_TERRENO,
     ETAPA_MASCARA,
     ETAPA_SIMULACAO,
+    salvar_estado,
 )
 
 # ==========================================================
@@ -58,11 +59,8 @@ def obter_uf() -> str:
         UF inexistente.
         O tratamento final será feito pelo módulo validação.
     """
-
     uf = input("Digite a sigla da UF desejada: ")
-
     uf = uf.strip().upper()
-
     return uf
 
 def obter_elevacao() -> int:
@@ -75,7 +73,6 @@ def obter_elevacao() -> int:
     Caso 2:
         Rejeita letras, caracteres especiais e decimais.
     """
-
     entrada = input(
         "Digite a elevação do nível do mar (em metros): "
     )

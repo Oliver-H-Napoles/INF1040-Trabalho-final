@@ -32,6 +32,8 @@ import pickle
 import numpy as np
 from typing import Any
 
+from agua import carrega_dados
+
 __all__ = [
     "carregar_estado",
     "salvar_estado",
@@ -85,6 +87,8 @@ def carregar_estado() -> dict:
     """
     if not os.path.exists(STATE_FILE):
         return _estado_vazio()
+    
+    carrega_dados(os.path.abspath(STATE_FILE))
 
     try:
         with open(STATE_FILE, "r", encoding="utf-8") as f:

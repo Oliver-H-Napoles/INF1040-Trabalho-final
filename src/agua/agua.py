@@ -35,29 +35,34 @@ def carrega_dados(path_arq: str) -> int:
             Deve retornar um inteiro indicando o status da execução.
     '''
     print("Carregando dados da última execução")
+
     try:
-        with open(path_arq, "r") as file:
+        with open(path_arq, "r", encoding="utf-8") as file:
             data = load(file)
     except Exception as erro:
-        print(f"Erro ao carregar os arquivos: {erro}")
+        print(f"Erro ao carregar state.json: {erro}")
         return 2
 
-    if "masc_agua" not in data:
+    try:
+        caminho_mascara = data["files"]["mascara_agua"]
+    except KeyError:
         return 1
 
-    global _dados
     try:
-        mascara = np.array(data["masc_agua"], dtype=float)
-        nascente = acha_nascente(mascara)
+        mascara = np.load(caminho_mascara, allow_pickle=False)
     except Exception as erro:
-        print(f"Erro ao processar a máscara carregada: {erro}")
+        print(f"Erro ao carregar máscara: {erro}")
         return 2
+
+    nascente = acha_nascente(mascara)
 
     if nascente is None:
         return 1
 
+    global _dados
     _dados["mascara"] = mascara
     _dados["nascente"] = nascente
+
     return 0
 
 
@@ -144,7 +149,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
         @params:
             "terreno" -> Numpy 2-dimensional array, em que cada célula consta os valores de altitude daquela região
             "masc_agua" -> Máscara criada pela função "cria_mascara_agua" 
-            "nivel_do_mar" -> Float que indica o nível de inundação a ser simulado
+            "nivel_do_mar" -> Inteiro que indica o nível de inundação a ser simulado
 
         @returns (convenção de produtora):
             None -> Erro de parâmetro: nível do mar não positivo, tamanhos de "terreno"/"masc_agua"
@@ -154,8 +159,8 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
         Assertivas de entradas:
             O parâmetro "terreno" deve seguir todas as assertivas do raster;
             O parâmetro "masc_agua" deve seguir todas as assertivas da máscara d`água, definido na função "cria_mascara_agua";
-            O parâmetro de "nivel_do_mar" é um float positivo, não nulo.
-
+            O parâmetro de "nivel_do_mar" é um inteiro positivo, não nulo.
+        
         Assertivas de saída:
             O retorno dessa função será um int não nulo em caso de êxito, ou None em caso de erro;
     '''
@@ -177,7 +182,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
     neighbors: deque[tuple[int, int]] = deque()
     qtd: int = 1 # Já considerando a nascente
 
-    neighbors.append(_dados["nascente"]) # Canto inferior direito (conforme especificação)
+    neighbors.append(_dados["nascente"])
     while bool(neighbors):
         x, y = neighbors.popleft()
         # print(f"Expansão para a célula ({x}, {y}) {len(neighbors)} restantes")
