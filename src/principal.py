@@ -124,14 +124,23 @@ def main(uf: str) -> int:
     if valida_elevacao(elevacao) != 0:
         print("Erro: Elevação inválida.")
         return 2
+       
+    if estado["state"] == ETAPA_MASCARA and raster_isolado is not None:
+        xy_fonte = estado["metadata"].get("xy_fonte", 2)
+        tam_x, tam_y = raster_isolado.shape
+        mascara_agua = cria_mascara_agua(tam_x, tam_y, xy_fonte)
 
-    if estado["uf"] is not None and estado["uf"] != uf:
-        print(f"[main] UF diferente da última execução. Reiniciando do zero.\n")
-        estado = resetar_estado()
-        dados  = {}
-        raster_isolado = None
-        mascara_agua   = None
-        area_inundada  = None
+    uf_salva = estado.get("uf")
+    elevacao_salva = estado.get("elevacao")
+
+    if uf_salva is not None:
+        if uf_salva != uf or (elevacao_salva is not None and elevacao_salva != elevacao):
+            print(f"[main] Parâmetros (UF ou Elevação) alterados. Reiniciando do zero.\n")
+            estado = resetar_estado()
+            dados  = {}
+            raster_isolado = None
+            mascara_agua   = None
+            area_inundada  = None
 
     # Inicializa as variáveis de controle ANTES do try
     arquivos_para_salvar = {}
@@ -191,7 +200,6 @@ def main(uf: str) -> int:
                 print("Erro: não foi possível expandir a máscara de água.")
                 return 4
     
-            arquivos_para_salvar["mascara_agua"] = mascara_agua
             metadados_para_salvar["area_inundada"] = area_inundada
             metadados_para_salvar["elevacao_simulada"] = elevacao
             novo_estado_num = ETAPA_SIMULACAO

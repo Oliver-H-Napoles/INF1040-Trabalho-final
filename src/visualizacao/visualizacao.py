@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def projetar_camadas(terreno, masc_agua) -> int:
+def projetar_camadas(terreno, masc_agua, fator_reducao=10) -> int:
     """
     Projeta a máscara de água sobre a matriz/raster do terreno.
 
@@ -35,10 +35,14 @@ def projetar_camadas(terreno, masc_agua) -> int:
     if terreno.shape != masc_agua.shape:
         return 3
 
+    # Reduzindo a resolução pulando elementos da matriz (decimação)
+    terreno_red = terreno[::fator_reducao, ::fator_reducao]
+    masc_agua_red = masc_agua[::fator_reducao, ::fator_reducao]
+
     try:
         plt.figure()
-        plt.imshow(terreno, cmap="terrain")
-        agua = np.ma.masked_where(masc_agua == 0, masc_agua)
+        plt.imshow(terreno_red, cmap="terrain")
+        agua = np.ma.masked_where(masc_agua_red == 0, masc_agua_red)
 
         plt.imshow(
             agua,
@@ -46,15 +50,14 @@ def projetar_camadas(terreno, masc_agua) -> int:
             alpha=0.7,
             interpolation="none"
         )
-        # plt.imshow(np.ma.masked_where(masc_agua == 0, masc_agua), alpha=0.5)
-        plt.title("Projeção da inundação sobre o terreno")
+        plt.title(f"Projeção da inundação (Resolução 1/{fator_reducao})")
         plt.show()
         return 0
     except Exception:
         return 4
 
 
-def gerar_heatmap(mapa):
+def gerar_heatmap(mapa, fator_reducao=10):
     """
     Gera um objeto de heatmap a partir de uma matriz.
 
@@ -78,10 +81,13 @@ def gerar_heatmap(mapa):
     if mapa.size == 0:
         return None
 
+    # Reduzindo a resolução
+    mapa_red = mapa[::fator_reducao, ::fator_reducao]
+
     try:
         fig, ax = plt.subplots()
-        ax.imshow(mapa)
-        ax.set_title("Heatmap da área analisada")
+        ax.imshow(mapa_red)
+        ax.set_title(f"Heatmap da área (Resolução 1/{fator_reducao})")
         return fig
     except Exception as erro:
         print(f"Erro ao gerar heatmap: {erro}")
