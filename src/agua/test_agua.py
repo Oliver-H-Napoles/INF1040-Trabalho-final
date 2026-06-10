@@ -160,14 +160,22 @@ def test_acha_nascente_erro_nenhum_canto_zero():
 # =============================================================================
 # carrega_dados  (ação -> int)
 # =============================================================================
-
 def test_carrega_dados_ok_mascara_valida():
     """JSON com máscara válida -> 0 (êxito) e estado do módulo carregado."""
-    conteudo = {"masc_agua": [[1, 0], [0, 0]]}
+    conteudo = {
+        "files": {
+            "mascara_agua": "mascara.npy"
+        }
+    }
+
+    mascara = np.array([[1, 0], [0, 0]])
+
     with patch("builtins.open", mock_open()), \
-            patch("agua.agua.load", return_value=conteudo):
+         patch("agua.agua.load", return_value=conteudo), \
+         patch("agua.agua.np.load", return_value=mascara):
+
         assert carrega_dados("ultima_execucao.json") == 0
-    # Estado encapsulado deve ter sido carregado.
+
     assert _dados["mascara"] is not None
     assert _dados["nascente"] is not None
 
