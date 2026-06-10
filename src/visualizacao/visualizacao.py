@@ -37,8 +37,16 @@ def projetar_camadas(terreno, masc_agua) -> int:
 
     try:
         plt.figure()
-        plt.imshow(terreno)
-        plt.imshow(np.ma.masked_where(masc_agua == 0, masc_agua), alpha=0.5)
+        plt.imshow(terreno, cmap="terrain")
+        agua = np.ma.masked_where(masc_agua == 0, masc_agua)
+
+        plt.imshow(
+            agua,
+            cmap="Blues",
+            alpha=0.7,
+            interpolation="none"
+        )
+        # plt.imshow(np.ma.masked_where(masc_agua == 0, masc_agua), alpha=0.5)
         plt.title("Projeção da inundação sobre o terreno")
         plt.show()
         return 0

@@ -35,29 +35,34 @@ def carrega_dados(path_arq: str) -> int:
             Deve retornar um inteiro indicando o status da execução.
     '''
     print("Carregando dados da última execução")
+
     try:
-        with open(path_arq, "r") as file:
+        with open(path_arq, "r", encoding="utf-8") as file:
             data = load(file)
     except Exception as erro:
-        print(f"Erro ao carregar os arquivos: {erro}")
+        print(f"Erro ao carregar state.json: {erro}")
         return 2
 
-    if "masc_agua" not in data:
+    try:
+        caminho_mascara = data["files"]["mascara_agua"]
+    except KeyError:
         return 1
 
-    global _dados
     try:
-        mascara = np.array(data["masc_agua"], dtype=float)
-        nascente = acha_nascente(mascara)
+        mascara = np.load(caminho_mascara, allow_pickle=False)
     except Exception as erro:
-        print(f"Erro ao processar a máscara carregada: {erro}")
+        print(f"Erro ao carregar máscara: {erro}")
         return 2
+
+    nascente = acha_nascente(mascara)
 
     if nascente is None:
         return 1
 
+    global _dados
     _dados["mascara"] = mascara
     _dados["nascente"] = nascente
+
     return 0
 
 

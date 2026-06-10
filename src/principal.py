@@ -2,6 +2,7 @@
 # IMPORTS DOS OUTROS MÓDULOS
 # ==========================================================
 import sys
+import atexit
 
 # Módulo Validação
 from validacao.validacao import (
@@ -34,7 +35,16 @@ from persistencia.persistencia import (
     ETAPA_TERRENO,
     ETAPA_MASCARA,
     ETAPA_SIMULACAO,
+    salvar_estado,
 )
+
+estado: dict = carregar_estado()
+
+def salva_operacao():
+    global estado
+    salvar_estado(estado)
+
+atexit.register(salva_operacao)
 
 # ==========================================================
 # MÓDULO PRINCIPAL
@@ -109,7 +119,7 @@ def main(uf: str) -> int:
     # ------------------------------------------------------
     # Persistência dos arquivos carregados
     # ------------------------------------------------------
-    estado = carregar_estado()
+    global estado
     dados  = carregar_dados_salvos(estado)
  
     if estado["state"] > ETAPA_INICIAL:
@@ -171,6 +181,12 @@ def main(uf: str) -> int:
         arquivos_para_salvar["raster_isolado"] = raster_isolado
         metadados_para_salvar["shape"] = list(raster_isolado.shape)
         novo_estado_num = ETAPA_TERRENO
+        estado = avancar_etapa(
+            estado,
+            nova_etapa=novo_estado_num,
+            novos_arquivos = arquivos_para_salvar,
+            novos_metadados = metadados_para_salvar
+        )
     else:
         print(f"[main] Etapa 1 já concluída — raster carregado do disco.")
 
@@ -192,6 +208,12 @@ def main(uf: str) -> int:
         arquivos_para_salvar["mascara_agua"] = mascara_agua
         metadados_para_salvar["xy_fonte"] = xy_fonte
         novo_estado_num = ETAPA_MASCARA
+        estado = avancar_etapa(
+            estado,
+            nova_etapa=novo_estado_num,
+            novos_arquivos = arquivos_para_salvar,
+            novos_metadados = metadados_para_salvar
+        )
     else:
         print("[main] Etapa 2 já concluída — máscara carregada do disco.")
 
@@ -217,6 +239,12 @@ def main(uf: str) -> int:
         metadados_para_salvar["area_inundada"] = area_inundada
         metadados_para_salvar["elevacao_simulada"] = elevacao
         novo_estado_num = ETAPA_SIMULACAO
+        estado = avancar_etapa(
+            estado,
+            nova_etapa=novo_estado_num,
+            novos_arquivos = arquivos_para_salvar,
+            novos_metadados = metadados_para_salvar
+        )
     else:
         area_inundada = estado["metadata"]["area_inundada"]
         print(f"[main] Etapa 3 já concluída para elevação={elevacao}m.")
