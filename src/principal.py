@@ -41,28 +41,6 @@ from persistencia.persistencia import (
 # MÓDULO PRINCIPAL
 # ==========================================================
 
-def obter_uf() -> str:
-    """
-    Captura a UF digitada pelo usuário.
-
-    Caso 1:
-        Entrada válida.
-
-    Caso 2:
-        Remove espaços e converte para maiúsculas.
-
-    Caso 3:
-        UF sem litoral.
-        O tratamento final será feito pelo módulo validação.
-
-    Caso 4:
-        UF inexistente.
-        O tratamento final será feito pelo módulo validação.
-    """
-    uf = input("Digite a sigla da UF desejada: ")
-    uf = uf.strip().upper()
-    return uf
-
 def obter_elevacao() -> int:
     """
     Captura a elevação informada pelo usuário.
