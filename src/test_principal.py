@@ -113,7 +113,7 @@ def test_main_erro_falha_ao_criar_mascara():
     deps = _dependencias_ok()
     
     # Em vez de criar um mock novo, alteramos o retorno do mock que já existe!
-    deps["cria_mascara_agua"].return_value = None
+    deps["cria_mascara_agua"].return_value = 1
     
     with patch.multiple(principal, **deps):
         assert principal.main("RS") == 4
@@ -122,7 +122,7 @@ def test_main_erro_falha_ao_criar_mascara():
 def test_main_erro_falha_ao_expandir_mascara():
     """expandir_mascara_agua retorna None -> 4 (falha na simulação da água)."""
     deps = _dependencias_ok()
-    deps["expandir_mascara_agua"] = MagicMock(return_value=None)
+    deps["expandir_mascara_agua"] = MagicMock(return_value=-1)
     with patch.multiple(principal, **deps):
         assert principal.main("RS") == 4
 

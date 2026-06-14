@@ -79,7 +79,7 @@ def acha_nascente(mat: np.ndarray) -> tuple[int, int] | None:
     return None
 
 
-def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | None:
+def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | int:
     '''
         Objetivo: Criar a máscara (matriz) de água com nascente em um dos cantos
 
@@ -89,8 +89,8 @@ def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | Non
             "xy_fonte" -> Valor inteiro que representa em qual canto a nascente d`água está na matriz, ou seja, de onde a água se espalhará inicialmente.
         
         @return (convenção de produtora):
-            None -> Erro em relação aos parâmetros (tamanho inválido ou "xy_fonte" fora de [0, 3]);
-            Numpy 2-dimension array com todas as células com 0, exceto a nascente com 1, em caso de êxito.
+            Em caso de êxito -> Numpy 2-dimension array com todas as células com 0, exceto a nascente com 1;
+            1 -> Erro em relação aos parâmetros (tamanho inválido ou "xy_fonte" fora de [0, 3]);
 
         Asserivas de entrada:
             Os parâmetros "tam_x" e "tam_y" devem ser, ambos, positivos não nulos;
@@ -103,11 +103,11 @@ def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | Non
     print("Criando máscara de água")
     tamanhoValido: bool = (tam_x > 0) and (tam_y > 0)
     if not tamanhoValido:
-        return None
+        return 1
 
     fonteValida: bool = xy_fonte in [0, 1, 2, 3]
     if not fonteValida:
-        return None
+        return 1
     
     global _dados
     
@@ -131,7 +131,7 @@ def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | Non
     return deepcopy(_dados["mascara"])
 
 
-def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_mar: float) -> int | None:
+def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_mar: float) -> int:
     '''
         Objetivo: Expandir a máscara d`água para ver o percentual de inundação dado certo nível do mar
 
@@ -141,9 +141,10 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
             "nivel_do_mar" -> Inteiro que indica o nível de inundação a ser simulado
 
         @returns (convenção de produtora):
-            None -> Erro de parâmetro: nível do mar não positivo, tamanhos de "terreno"/"masc_agua"
-                    incompatíveis, ou "masc_agua" diferente da máscara armazenada neste módulo;
-            int  -> A quantidade de células inundadas para aquele nível do mar, em caso de êxito.
+            Em caso de êxito -> A quantidade de células inundadas para aquele nível do mar.
+            1 -> Nível do mar inválido (negativo ou nulo);
+            2 -> Matrizes de tamanho diferentes;
+            3 -> Máscara d`água alterada indevidamente;
 
         Assertivas de entradas:
             O parâmetro "terreno" deve seguir todas as assertivas do raster;
@@ -155,16 +156,16 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
     '''
     print("Expandindo máscara de água")
     if nivel_do_mar <= 0:
-        return None
+        return -1
 
     tam_x, tam_y = masc_agua.shape
     if valida_matrizes_tamanho(terreno, masc_agua) != 0:
-        return None
+        return -2
 
     global _dados
 
     if not np.array_equal(masc_agua, _dados["mascara"]):
-        return None
+        return -3
 
     # Para o BFS
     neighbors: deque[tuple[int, int]] = deque()

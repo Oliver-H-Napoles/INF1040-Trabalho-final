@@ -60,14 +60,14 @@ def test_cria_mascara_ok_dimensoes_maiores():
 
 @pytest.mark.parametrize("tam_x, tam_y", [(-1, 0), (0, 0), (10, -2), (0, 5)])
 def test_cria_mascara_erro_tamanho_invalido(tam_x, tam_y):
-    """Tamanho inválido (dimensão <= 0) -> None (erro)."""
-    assert cria_mascara_agua(tam_x, tam_y, 0) is None
+    """Tamanho inválido (dimensão <= 0) -> 1 (erro)."""
+    assert cria_mascara_agua(tam_x, tam_y, 0) is 1
 
 
 @pytest.mark.parametrize("xy_fonte", [-1, 4, 5, 100])
 def test_cria_mascara_erro_fonte_invalida(xy_fonte):
-    """Fonte fora do intervalo [0, 3] -> None (erro)."""
-    assert cria_mascara_agua(10, 10, xy_fonte) is None
+    """Fonte fora do intervalo [0, 3] -> 1 (erro)."""
+    assert cria_mascara_agua(10, 10, xy_fonte) is 1
 
 
 # =============================================================================
@@ -98,42 +98,42 @@ def test_expandir_ok_terreno_decimal():
 
 
 def test_expandir_erro_nivel_do_mar_nulo():
-    """Nível do mar igual a zero -> None (erro)."""
+    """Nível do mar igual a zero -> -1 (erro)."""
     terreno = np.array([[5, 1, 2], [1, 4, 10], [1, 10, 0]], dtype=float)
     masc = cria_mascara_agua(3, 3, 2)
-    assert expandir_mascara_agua(terreno, masc, 0) is None
+    assert expandir_mascara_agua(terreno, masc, 0) is -1
 
 
 def test_expandir_erro_nivel_do_mar_negativo():
-    """Nível do mar negativo (-2) -> None (erro)."""
+    """Nível do mar negativo (-2) -> -1 (erro)."""
     terreno = np.array([[5, 1, 2], [1, 4, 10], [1, 10, 0]], dtype=float)
     masc = cria_mascara_agua(3, 3, 2)
-    assert expandir_mascara_agua(terreno, masc, -2) is None
+    assert expandir_mascara_agua(terreno, masc, -2) is -1
 
 
 def test_expandir_erro_tamanhos_incompativeis_mascara_menor():
-    """Máscara menor que o terreno -> None (erro de tamanho)."""
+    """Máscara menor que o terreno -> -2 (erro de tamanho)."""
     terreno = np.array([[5, 1, 2], [1, 4, 10], [1, 10, 0]], dtype=float)
     masc = cria_mascara_agua(2, 2, 2)
-    assert expandir_mascara_agua(terreno, masc, 3) is None
+    assert expandir_mascara_agua(terreno, masc, 3) is -2
 
 
 def test_expandir_erro_tamanhos_incompativeis_terreno_maior():
-    """Terreno maior que a máscara -> None (erro de tamanho)."""
+    """Terreno maior que a máscara -> -2 (erro de tamanho)."""
     terreno = np.array(
         [[5, 1, 2, 3], [1, 4, 10, 3], [1, 10, 0, 3]], dtype=float
     )
     masc = cria_mascara_agua(3, 3, 2)
-    assert expandir_mascara_agua(terreno, masc, 3) is None
+    assert expandir_mascara_agua(terreno, masc, 3) is -2
 
 
 def test_expandir_erro_mascara_diferente_da_armazenada():
-    """Máscara não corresponde à armazenada no módulo -> None (erro)."""
+    """Máscara não corresponde à armazenada no módulo -> -3 (erro)."""
     terreno = np.array([[5, 1, 2], [1, 4, 10], [1, 10, 0]], dtype=float)
     cria_mascara_agua(3, 3, 2)  # define a máscara armazenada no módulo
     # Máscara de mesmo tamanho, mas que não corresponde à armazenada.
     masc_estranha = np.zeros((3, 3), dtype=float)
-    assert expandir_mascara_agua(terreno, masc_estranha, 3) is None
+    assert expandir_mascara_agua(terreno, masc_estranha, 3) is -3
 
 
 # =============================================================================

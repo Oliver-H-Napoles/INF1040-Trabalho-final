@@ -157,7 +157,7 @@ def main(uf: str) -> int:
             xy_fonte     = 2
 
             mascara_agua = cria_mascara_agua(tam_x, tam_y, xy_fonte)
-            if mascara_agua is None:
+            if isinstance(mascara_agua, int):
                 print("Erro: não foi possível criar a máscara de água.")
                 return 4
 
@@ -172,7 +172,7 @@ def main(uf: str) -> int:
         # ------------------------------------------------------
         print("[main] Etapa 3: executando simulação de enchente...")
         area_inundada = expandir_mascara_agua(raster_isolado, mascara_agua, elevacao)
-        if area_inundada is None:
+        if area_inundada < 0:
             print("Erro: não foi possível expandir a máscara de água.")
             return 4
 
