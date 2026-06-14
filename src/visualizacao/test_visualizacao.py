@@ -107,10 +107,11 @@ def test_gerar_heatmap_erro_falha_na_renderizacao():
 # =============================================================================
 
 def test_plot_layers_ok_sucesso():
-    """Objeto de plot válido -> 0 (êxito) e show() chamado."""
+    """Objeto de plot válido -> 0 (êxito) e plt.show() chamado."""
     plot_obj = MagicMock()
-    assert plot_layers(plot_obj) == 0
-    plot_obj.show.assert_called_once()
+    with patch("visualizacao.visualizacao.plt.show") as mock_show:
+        assert plot_layers(plot_obj) == 0
+        mock_show.assert_called_once()
 
 
 def test_plot_layers_erro_objeto_none():
@@ -119,7 +120,8 @@ def test_plot_layers_erro_objeto_none():
 
 
 def test_plot_layers_erro_falha_ao_exibir():
-    """Falha ao exibir (show levanta exceção) -> 2 (erro inesperado)."""
+    """Falha ao exibir (plt.show levanta exceção) -> 2 (erro inesperado)."""
     plot_obj = MagicMock()
-    plot_obj.show.side_effect = RuntimeError("falha ao exibir")
-    assert plot_layers(plot_obj) == 2
+    with patch("visualizacao.visualizacao.plt.show") as mock_show:
+        mock_show.side_effect = RuntimeError("falha ao exibir")
+        assert plot_layers(plot_obj) == 2

@@ -4,27 +4,18 @@
 import sys
 
 # Módulo Validação
-from validacao.validacao import (
-    valida_uf,
-    valida_elevacao
-)
+from validacao.validacao import valida_uf, valida_elevacao
 
 # Módulo Terreno
 from terreno.terreno import isolar_estado
 
 # Módulo Água
-from agua import (
-    cria_mascara_agua,
-    expandir_mascara_agua
-)
+from agua import cria_mascara_agua, expandir_mascara_agua, carrega_dados
 
 # Módulo Visualização
-from visualizacao.visualizacao import (
-    projetar_camadas,
-    gerar_heatmap,
-    plot_layers
-)
+from visualizacao.visualizacao import projetar_camadas, gerar_heatmap, plot_layers
 
+# Módulo Persistência
 from persistencia.persistencia import (
     carregar_estado,
     avancar_etapa,
@@ -34,7 +25,13 @@ from persistencia.persistencia import (
     ETAPA_TERRENO,
     ETAPA_MASCARA,
     ETAPA_SIMULACAO,
-    salvar_estado,
+    obter_etapa_atual,
+    obter_uf_salva,
+    obter_elevacao_salva,
+    obter_metadado,
+    definir_parametros_base,
+    obter_dado_carregado,
+    obter_metadado_carregado
 )
 
 # ==========================================================
@@ -44,25 +41,12 @@ from persistencia.persistencia import (
 def obter_elevacao() -> int:
     """
     Captura a elevação informada pelo usuário.
-
-    Caso 1:
-        Retorna inteiro válido.
-
-    Caso 2:
-        Rejeita letras, caracteres especiais e decimais.
     """
-    entrada = input(
-        "Digite a elevação do nível do mar (em metros): "
-    )
-
+    entrada = input("Digite a elevação do nível do mar (em metros): ")
     try:
-        elevacao = int(entrada)
-        return elevacao
-
+        return int(entrada)
     except ValueError:
-        raise ValueError(
-            "Apenas números inteiros são aceitos."
-        )
+        raise ValueError("Apenas números inteiros são aceitos.")
 
 # ==========================================================
 # FLUXO PRINCIPAL DA APLICAÇÃO
@@ -70,23 +54,28 @@ def obter_elevacao() -> int:
 
 def main(uf: str) -> int:
     """
-    Fluxo principal da aplicação.
+    Fluxo principal da aplicação para simulação de elevação do nível do mar.
     """
     print("\nSIMULADOR DE ELEVAÇÃO DO NÍVEL DO MAR\n")
 
-    # 1. Carregamento inicial
+    # 1. CARREGAMENTO INICIAL (Uso estrito do TAD)
     estado = carregar_estado()
     dados  = carregar_dados_salvos(estado)
+    etapa_atual = obter_etapa_atual(estado)
  
-    if estado["state"] > ETAPA_INICIAL:
+    if etapa_atual > ETAPA_INICIAL:
         print(
-            f"[main] Retomando execução anterior: etapa {estado['state']}, "
-            f"UF={estado['uf']}, elevação={estado['elevacao']}m.\n"
+            f"[main] Retomando execução anterior: etapa {etapa_atual}, "
+            f"UF={obter_uf_salva(estado)}, elevação={obter_elevacao_salva(estado)}m.\n"
         )
  
-    raster_isolado = dados.get("raster_isolado")   
-    mascara_agua   = dados.get("mascara_agua")     
-    area_inundada  = dados.get("_metadata", {}).get("area_inundada")
+    raster_isolado = obter_dado_carregado(dados, "raster_isolado")   
+    mascara_agua   = obter_dado_carregado(dados, "mascara_agua")     
+    area_inundada  = obter_metadado_carregado(dados, "area_inundada")
+
+    # Restaura o estado interno do módulo de água logo no início
+    if mascara_agua is not None:
+        carrega_dados(mascara_agua)
 
     # 2. Validações iniciais
     if valida_uf(uf) != 0:
@@ -102,35 +91,40 @@ def main(uf: str) -> int:
     if valida_elevacao(elevacao) != 0:
         print("Erro: Elevação inválida.")
         return 2
-       
-    if estado["state"] == ETAPA_MASCARA and raster_isolado is not None:
-        xy_fonte = estado["metadata"].get("xy_fonte", 2)
-        tam_x, tam_y = raster_isolado.shape
-        mascara_agua = cria_mascara_agua(tam_x, tam_y, xy_fonte)
 
-    uf_salva = estado.get("uf")
-    elevacao_salva = estado.get("elevacao")
+    # Lógica de reinício
+    uf_salva = obter_uf_salva(estado)
 
     if uf_salva is not None:
-        if uf_salva != uf or (elevacao_salva is not None and elevacao_salva != elevacao):
-            print(f"[main] Parâmetros (UF ou Elevação) alterados. Reiniciando do zero.\n")
+        uf_diferente = str(uf_salva).strip().upper() != str(uf).strip().upper()
+
+        if uf_diferente:
+            # UF mudou: descarta tudo, inclusive o terreno
+            print("[main] UF alterada. Reiniciando a simulação do zero (Hard Reset).\n")
             estado = resetar_estado()
             dados  = {}
+            etapa_atual = obter_etapa_atual(estado)
             raster_isolado = None
             mascara_agua   = None
             area_inundada  = None
+        else:
+            # Mesma UF (elevação igual ou diferente): sempre recria a máscara de água
+            print("[main] Recriando a máscara de água.\n")
+            etapa_atual = ETAPA_TERRENO
+            mascara_agua  = None
+            area_inundada = None
 
     # Inicializa as variáveis de controle ANTES do try
     arquivos_para_salvar = {}
     metadados_para_salvar = {}
-    novo_estado_num = estado["state"]
+    novo_estado_num = etapa_atual
 
     # 3. Bloco principal protegido
     try:
         # ------------------------------------------------------
         # Terreno
         # ------------------------------------------------------
-        if estado["state"] < ETAPA_TERRENO:
+        if novo_estado_num < ETAPA_TERRENO:
             print("[main] Etapa 1: carregando terrain...")
             raster_isolado = isolar_estado(uf)
             if raster_isolado is None:
@@ -141,7 +135,7 @@ def main(uf: str) -> int:
             metadados_para_salvar["shape"] = list(raster_isolado.shape)
             novo_estado_num = ETAPA_TERRENO
         else:
-            print(f"[main] Etapa 1 já concluída — raster carregado do disco.")
+            print(f"[main] Etapa 1 já concluída — raster carregado do disco/memória.")
 
         # ------------------------------------------------------
         # Água
@@ -163,30 +157,20 @@ def main(uf: str) -> int:
             print("[main] Etapa 2 já concluída — máscara carregada do disco.")
 
         # ------------------------------------------------------
-        # Simulação
+        # Simulação (sempre executa: máscara sempre recriada acima)
         # ------------------------------------------------------
-        elevacao_anterior = estado["metadata"].get("elevacao_simulada")
-        simulacao_atualizada = (
-            novo_estado_num >= ETAPA_SIMULACAO
-            and elevacao_anterior == elevacao
-        )
+        print("[main] Etapa 3: executando simulação de enchente...")
+        area_inundada = expandir_mascara_agua(raster_isolado, mascara_agua, elevacao)
+        if area_inundada is None:
+            print("Erro: não foi possível expandir a máscara de água.")
+            return 4
 
-        if not simulacao_atualizada:
-            print("[main] Etapa 3: executando simulação de enchente...")
-            area_inundada = expandir_mascara_agua(raster_isolado, mascara_agua, elevacao)
-            if area_inundada is None:
-                print("Erro: não foi possível expandir a máscara de água.")
-                return 4
-    
-            metadados_para_salvar["area_inundada"] = area_inundada
-            metadados_para_salvar["elevacao_simulada"] = elevacao
-            novo_estado_num = ETAPA_SIMULACAO
-        else:
-            area_inundada = estado["metadata"]["area_inundada"]
-            print(f"[main] Etapa 3 já concluída para elevação={elevacao}m.")
+        metadados_para_salvar["area_inundada"] = area_inundada
+        metadados_para_salvar["elevacao_simulada"] = elevacao
+        novo_estado_num = ETAPA_SIMULACAO
 
         # ------------------------------------------------------------------
-        # Resultados e Visualização (Ocorre apenas se não houver interrupção)
+        # Resultados e Visualização
         # ------------------------------------------------------------------
         print(
             f"\nÁrea inundada: {area_inundada * 900 / 1_000_000:.2f} km² "
@@ -202,16 +186,15 @@ def main(uf: str) -> int:
 
     except KeyboardInterrupt:
         print("\n[Aviso] Processo interrompido pelo usuário (Ctrl+C). Salvando progresso...")
-        return 130 # Código padrão de saída em sistemas Unix para KeyboardInterrupt
+        return 130
 
     finally:
         # ------------------------------------------------------------------
-        # PERSISTÊNCIA — Executada independentemente de sucesso, erro ou Ctrl+C
+        # PERSISTÊNCIA
         # ------------------------------------------------------------------
         if arquivos_para_salvar or metadados_para_salvar:
             print("\n[main] Gravando dados encapsulados no arquivo antes de encerrar...")
-            estado["uf"]       = uf
-            estado["elevacao"] = elevacao
+            definir_parametros_base(estado, uf, elevacao)
             
             avancar_etapa(
                 estado,
@@ -221,7 +204,6 @@ def main(uf: str) -> int:
             )
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) > 1:
         uf_alvo = sys.argv[1]
     else:
