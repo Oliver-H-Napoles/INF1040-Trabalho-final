@@ -62,15 +62,15 @@ def main(uf: str) -> int:
     estado = carregar_estado()
     dados  = carregar_dados_salvos(estado)
     etapa_atual = obter_etapa_atual(estado)
- 
+
     if etapa_atual > ETAPA_INICIAL:
         print(
             f"[main] Retomando execução anterior: etapa {etapa_atual}, "
             f"UF={obter_uf_salva(estado)}, elevação={obter_elevacao_salva(estado)}m.\n"
         )
- 
-    raster_isolado = obter_dado_carregado(dados, "raster_isolado")   
-    mascara_agua   = obter_dado_carregado(dados, "mascara_agua")     
+
+    raster_isolado = obter_dado_carregado(dados, "raster_isolado")
+    mascara_agua   = obter_dado_carregado(dados, "mascara_agua")
     area_inundada  = obter_metadado_carregado(dados, "area_inundada")
 
     # Restaura o estado interno do módulo de água logo no início
@@ -92,7 +92,9 @@ def main(uf: str) -> int:
         print("Erro: Elevação inválida.")
         return 2
 
+    # ------------------------------------------------------------------
     # Lógica de reinício
+    # ------------------------------------------------------------------
     uf_salva = obter_uf_salva(estado)
 
     if uf_salva is not None:
@@ -107,10 +109,19 @@ def main(uf: str) -> int:
             raster_isolado = None
             mascara_agua   = None
             area_inundada  = None
+
+        elif etapa_atual >= ETAPA_SIMULACAO:
+            # Mesma UF e simulação já concluída: só reproduz o mapa
+            print("[main] Simulação já concluída. Reproduzindo o mapa salvo.\n")
+            projetar_camadas(raster_isolado, mascara_agua)
+            #heatmap = gerar_heatmap(raster_isolado)
+            #plot_layers(heatmap)
+            return 0
+
         else:
-            # Mesma UF (elevação igual ou diferente): sempre recria a máscara de água
-            print("[main] Recriando a máscara de água.\n")
-            etapa_atual = ETAPA_TERRENO
+            # Mesma UF, mas simulação incompleta: recria a máscara de água
+            print("[main] Simulação incompleta. Recriando a máscara de água.\n")
+            etapa_atual   = ETAPA_TERRENO
             mascara_agua  = None
             area_inundada = None
 
@@ -130,12 +141,12 @@ def main(uf: str) -> int:
             if raster_isolado is None:
                 print("Erro: não foi possível carregar o terreno.")
                 return 3
-            
+
             arquivos_para_salvar["raster_isolado"] = raster_isolado
             metadados_para_salvar["shape"] = list(raster_isolado.shape)
             novo_estado_num = ETAPA_TERRENO
         else:
-            print(f"[main] Etapa 1 já concluída — raster carregado do disco/memória.")
+            print("[main] Etapa 1 já concluída — raster carregado do disco/memória.")
 
         # ------------------------------------------------------
         # Água
@@ -143,13 +154,13 @@ def main(uf: str) -> int:
         if novo_estado_num < ETAPA_MASCARA:
             print("[main] Etapa 2: criando máscara de água...")
             tam_x, tam_y = raster_isolado.shape
-            xy_fonte     = 2  
-    
+            xy_fonte     = 2
+
             mascara_agua = cria_mascara_agua(tam_x, tam_y, xy_fonte)
             if mascara_agua is None:
                 print("Erro: não foi possível criar a máscara de água.")
                 return 4
-    
+
             arquivos_para_salvar["mascara_agua"] = mascara_agua
             metadados_para_salvar["xy_fonte"] = xy_fonte
             novo_estado_num = ETAPA_MASCARA
@@ -176,11 +187,11 @@ def main(uf: str) -> int:
             f"\nÁrea inundada: {area_inundada * 900 / 1_000_000:.2f} km² "
             f"({area_inundada} células)"
         )
-    
+
         projetar_camadas(raster_isolado, mascara_agua)
         #heatmap = gerar_heatmap(raster_isolado)
         #plot_layers(heatmap)
-    
+
         print("\nSimulação concluída com sucesso.")
         return 0
 
@@ -195,7 +206,7 @@ def main(uf: str) -> int:
         if arquivos_para_salvar or metadados_para_salvar:
             print("\n[main] Gravando dados encapsulados no arquivo antes de encerrar...")
             definir_parametros_base(estado, uf, elevacao)
-            
+
             avancar_etapa(
                 estado,
                 nova_etapa      = novo_estado_num,
@@ -209,5 +220,5 @@ if __name__ == "__main__":
     else:
         print("Erro: UF não fornecida. Use: python principal.py <UF>")
         sys.exit(1)
-    
+
     sys.exit(main(uf_alvo))
