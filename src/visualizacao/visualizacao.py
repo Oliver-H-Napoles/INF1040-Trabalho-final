@@ -50,7 +50,7 @@ def projetar_camadas(terreno, masc_agua, fator_reducao=10) -> int:
             alpha=0.7,
             interpolation="none"
         )
-        plt.title(f"Projeção da inundação (Resolução 1/{fator_reducao})")
+        plt.title(f"Projeção da inundação")
         plt.show()
         return 0
     except Exception:

@@ -124,7 +124,7 @@ def salvar_estado(estado: dict) -> None:
     tmp = STATE_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(estado, f, indent=2, ensure_ascii=False)
-    os.replace(tmp, STATE_FILE)  # atômico no Linux/Windows
+    os.replace(tmp, STATE_FILE)  
 
 
 # ---------------------------------------------------------------------------
