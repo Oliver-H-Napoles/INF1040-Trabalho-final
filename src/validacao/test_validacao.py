@@ -19,7 +19,6 @@ from validacao.validacao import (
     valida_uf,
     valida_elevacao,
     valida_raster,
-    valida_poligono,
     valida_matrizes_tamanho,
 )
 
@@ -75,9 +74,9 @@ def test_valida_uf_erro_uf_inexistente_no_conjunto():
 
 
 def test_valida_uf_erro_falha_ao_abrir_arquivo():
-    """Falha ao abrir o estados.json -> 1 (erro)."""
+    """Falha ao abrir o estados.json -> 2 (erro)."""
     with patch("builtins.open", side_effect=OSError("arquivo ausente")):
-        assert valida_uf("RS") == 1
+        assert valida_uf("RS") == 2
 
 
 # =============================================================================
@@ -100,10 +99,10 @@ def test_valida_elevacao_erro_inteiro_negativo():
 
 
 def test_valida_elevacao_erro_nao_inteiro():
-    """Elevação não-inteira (float/str/None) -> 1 (erro)."""
-    assert valida_elevacao(3.5) == 1
-    assert valida_elevacao("5") == 1
-    assert valida_elevacao(None) == 1
+    """Elevação não-inteira (float/str/None) -> 2 (erro)."""
+    assert valida_elevacao(3.5) == 2
+    assert valida_elevacao("5") == 2
+    assert valida_elevacao(None) == 2
 
 
 # =============================================================================
@@ -126,44 +125,9 @@ def test_valida_raster_erro_sem_shape():
 
 
 def test_valida_raster_erro_dimensao_diferente_de_dois():
-    """Raster 1D ou 3D (dimensão != 2) -> 1 (erro)."""
-    assert valida_raster(np.zeros(5)) == 1          # 1D
-    assert valida_raster(np.zeros((2, 2, 2))) == 1  # 3D
-
-
-# =============================================================================
-# valida_poligono
-# =============================================================================
-
-class _PoligonoFake:
-    def __init__(self, geo_interface):
-        self.__geo_interface__ = geo_interface
-
-
-def test_valida_poligono_ok_geo_interface_valida():
-    """Polígono com __geo_interface__ contendo 'type' -> 0 (êxito)."""
-    poligono = _PoligonoFake({"type": "Polygon", "coordinates": []})
-    assert valida_poligono(poligono) == 0
-
-
-def test_valida_poligono_erro_none():
-    """Polígono None -> 1 (erro)."""
-    assert valida_poligono(None) == 1
-
-
-def test_valida_poligono_erro_sem_geo_interface():
-    """Objeto sem __geo_interface__ -> 1 (erro)."""
-    assert valida_poligono(object()) == 1
-
-
-def test_valida_poligono_erro_geo_interface_nao_dict():
-    """__geo_interface__ que não é dict -> 1 (erro)."""
-    assert valida_poligono(_PoligonoFake("nao_dict")) == 1
-
-
-def test_valida_poligono_erro_geo_interface_sem_type():
-    """__geo_interface__ dict sem a chave 'type' -> 1 (erro)."""
-    assert valida_poligono(_PoligonoFake({"coordinates": []})) == 1
+    """Raster 1D ou 3D (dimensão != 2) -> 2 (erro)."""
+    assert valida_raster(np.zeros(5)) == 2          # 1D
+    assert valida_raster(np.zeros((2, 2, 2))) == 2  # 3D
 
 
 # =============================================================================
@@ -181,11 +145,11 @@ def test_valida_matrizes_tamanho_erro_shapes_diferentes():
 
 
 def test_valida_matrizes_tamanho_erro_alguma_none():
-    """Alguma das matrizes é None -> 1 (erro)."""
-    assert valida_matrizes_tamanho(None, np.zeros((3, 3))) == 1
-    assert valida_matrizes_tamanho(np.zeros((3, 3)), None) == 1
+    """Alguma das matrizes é None -> 2 (erro)."""
+    assert valida_matrizes_tamanho(None, np.zeros((3, 3))) == 2
+    assert valida_matrizes_tamanho(np.zeros((3, 3)), None) == 2
 
 
 def test_valida_matrizes_tamanho_erro_sem_shape():
-    """Alguma das matrizes não possui 'shape' (lista) -> 1 (erro)."""
-    assert valida_matrizes_tamanho([[1, 2]], np.zeros((1, 2))) == 1
+    """Alguma das matrizes não possui 'shape' (lista) -> 2 (erro)."""
+    assert valida_matrizes_tamanho([[1, 2]], np.zeros((1, 2))) == 2

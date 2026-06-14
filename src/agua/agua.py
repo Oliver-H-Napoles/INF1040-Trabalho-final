@@ -1,9 +1,15 @@
-__all__ = ["cria_mascara_agua", "expandir_mascara_agua", "carrega_dados"]
+__all__ = [
+    "cria_mascara_agua", 
+    "expandir_mascara_agua", 
+    "carrega_dados"
+]
 
 # Import das bibliotecas necessárias
 from collections import deque
 from copy import deepcopy
 import numpy as np
+
+from validacao import valida_matrizes_tamanho
 
 
 # Dados encapsulados
@@ -152,8 +158,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
         return None
 
     tam_x, tam_y = masc_agua.shape
-    has_same_size: bool = (tam_x, tam_y) == terreno.shape
-    if not has_same_size:
+    if valida_matrizes_tamanho(terreno, masc_agua) != 0:
         return None
 
     global _dados
@@ -168,9 +173,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
     neighbors.append(_dados["nascente"])
     while bool(neighbors):
         x, y = neighbors.popleft()
-        # print(f"Expansão para a célula ({x}, {y}) {len(neighbors)} restantes")
 
-    
         for new_x, new_y in [(x-1,y),(x+1,y),(x,y-1),(x,y+1)]:
             if not (0 <= new_x < tam_x and 0 <= new_y < tam_y):
                 continue

@@ -1,4 +1,8 @@
-__all__ = ["projetar_camadas", "gerar_heatmap", "plot_layers"]
+__all__ = [
+    "projetar_camadas",
+    "gerar_heatmap",
+    "plot_layers"
+]
 
 import numpy as np
 import matplotlib.pyplot as plt
