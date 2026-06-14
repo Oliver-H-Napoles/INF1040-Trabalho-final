@@ -178,8 +178,8 @@ def main(uf: str) -> int:
         )
     
         projetar_camadas(raster_isolado, mascara_agua)
-        heatmap = gerar_heatmap(raster_isolado)
-        plot_layers(heatmap)
+        #heatmap = gerar_heatmap(raster_isolado)
+        #plot_layers(heatmap)
     
         print("\nSimulação concluída com sucesso.")
         return 0
