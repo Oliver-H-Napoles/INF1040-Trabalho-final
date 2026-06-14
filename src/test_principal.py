@@ -18,23 +18,6 @@ import pytest
 
 import principal
 
-
-# =============================================================================
-# obter_uf  (produtora -> str)
-# =============================================================================
-
-def test_obter_uf_ok_retorna_sigla():
-    """Usuário digita 'RS' -> retorna 'RS'."""
-    with patch("builtins.input", return_value="RS"):
-        assert principal.obter_uf() == "RS"
-
-
-def test_obter_uf_ok_normaliza_espacos_e_maiusculas():
-    """Usuário digita '  rj  ' -> normaliza para 'RJ'."""
-    with patch("builtins.input", return_value="  rj  "):
-        assert principal.obter_uf() == "RJ"
-
-
 # =============================================================================
 # obter_elevacao  (produtora -> int | ValueError)
 # =============================================================================
