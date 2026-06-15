@@ -96,13 +96,15 @@ def main(uf: str) -> int:
     # Lógica de reinício
     # ------------------------------------------------------------------
     uf_salva = obter_uf_salva(estado)
+    elevacao_salva = obter_elevacao_salva(estado)
 
     if uf_salva is not None:
         uf_diferente = str(uf_salva).strip().upper() != str(uf).strip().upper()
+        elevacao_diferente = elevacao_salva is not None and elevacao_salva != elevacao
 
-        if uf_diferente:
+        if uf_diferente or elevacao_diferente:
             # UF mudou: descarta tudo, inclusive o terreno
-            print("[main] UF alterada. Reiniciando a simulação do zero (Hard Reset).\n")
+            print("[main] UF e/ou elevação alterada. Reiniciando a simulação do zero (Hard Reset).\n")
             estado = resetar_estado()
             dados  = {}
             etapa_atual = obter_etapa_atual(estado)
