@@ -167,7 +167,7 @@ def aplicar_mascara_isolamento(raster_terreno, poligono_fronteira, transform):
         raster_delimitado = np.where(mascara_mar, VALOR_MAR, raster_estado)
 
 
-        return raster_delimitado
+        return raster_delimitado.copy()
 
     except Exception as erro:
         print(f"Erro ao aplicar mascara de isolamento: {erro}")

@@ -2,14 +2,14 @@
 Testes unitários do Módulo Principal.
 
 Convenção de saídas validada por estes testes:
-    - obter_uf (produtora): retorna a UF normalizada (str);
     - obter_elevacao (produtora): retorna int em caso de êxito e levanta
       ValueError para entrada não-inteira;
     - main (ação -> int): 0 êxito; 1 UF inválida; 2 elevação inválida;
       3 falha no terreno; 4 falha na simulação da água.
 
 Mock: `input()` é substituído para simular a digitação do usuário e todas as
-dependências de outros módulos são dubladas, isolando o fluxo de orquestração.
+dependências de outros módulos (incluindo as funções de acesso do TAD) são dubladas, 
+isolando o fluxo de orquestração.
 """
 from unittest.mock import MagicMock, patch
 
@@ -52,11 +52,20 @@ def _dependencias_ok():
         gerar_heatmap=MagicMock(return_value=MagicMock()),
         plot_layers=MagicMock(return_value=0),
 
-        carregar_estado= MagicMock(return_value={"state": 0, "uf": None, "elevacao": None, "files": {}, "metadata": {}}),
-        carregar_dados_salvos=MagicMock(return_value={"_metadata": {}}),
+        # Dublês estruturais da persistência
+        carregar_estado=MagicMock(return_value={"mock": "estado_vazio"}),
+        carregar_dados_salvos=MagicMock(return_value={"mock": "dados_vazios"}),
         avancar_etapa=MagicMock(),
-        resetar_estado=MagicMock(return_value={"state": 0, "uf": None, "elevacao": None, "files": {}, "metadata": {}}),
+        resetar_estado=MagicMock(return_value={"mock": "estado_resetado"}),
 
+        # Dublês das novas funções de acesso do TAD
+        obter_etapa_atual=MagicMock(return_value=0),
+        obter_uf_salva=MagicMock(return_value=None),
+        obter_elevacao_salva=MagicMock(return_value=None),
+        obter_metadado=MagicMock(return_value=None),
+        obter_dado_carregado=MagicMock(return_value=None),
+        obter_metadado_carregado=MagicMock(return_value=None),
+        definir_parametros_base=MagicMock(),
     )
 
 
@@ -102,7 +111,10 @@ def test_main_erro_falha_no_terreno():
 def test_main_erro_falha_ao_criar_mascara():
     """cria_mascara_agua retorna None -> 4 (falha na simulação da água)."""
     deps = _dependencias_ok()
-    deps["cria_mascara_agua"] = MagicMock(return_value=None)
+    
+    # Em vez de criar um mock novo, alteramos o retorno do mock que já existe!
+    deps["cria_mascara_agua"].return_value = 1
+    
     with patch.multiple(principal, **deps):
         assert principal.main("RS") == 4
 
@@ -110,7 +122,7 @@ def test_main_erro_falha_ao_criar_mascara():
 def test_main_erro_falha_ao_expandir_mascara():
     """expandir_mascara_agua retorna None -> 4 (falha na simulação da água)."""
     deps = _dependencias_ok()
-    deps["expandir_mascara_agua"] = MagicMock(return_value=None)
+    deps["expandir_mascara_agua"] = MagicMock(return_value=-1)
     with patch.multiple(principal, **deps):
         assert principal.main("RS") == 4
 
@@ -120,25 +132,23 @@ def test_main_erro_falha_ao_expandir_mascara():
 
 def test_main_ok_pula_etapa_terreno_se_estado_avancado():
     """
-    Se o state.json indicar que a Etapa 1 (terreno) já foi feita,
+    Se a função obter_etapa_atual indicar que a Etapa 1 (terreno) já foi feita,
     a função isolar_estado NÃO deve ser chamada novamente.
     """
     deps = _dependencias_ok()
     
-    # Simulamos que o programa já rodou antes para o 'RS' e parou na etapa 1
-    deps["carregar_estado"] = MagicMock(return_value={
-        "state": 1, 
-        "uf": "RS", 
-        "elevacao": 5, 
-        "files": {}, 
-        "metadata": {}
-    })
+    # Simulamos via Getters que o programa já rodou antes para o 'RS' e parou na etapa 1
+    deps["obter_etapa_atual"] = MagicMock(return_value=1)
+    deps["obter_uf_salva"] = MagicMock(return_value="RS")
+    deps["obter_elevacao_salva"] = MagicMock(return_value=5)
     
-    # Simulamos o carregamento dos dados que já estariam no disco
-    deps["carregar_dados_salvos"] = MagicMock(return_value={
-        "raster_isolado": np.zeros((3, 3)),
-        "_metadata": {}
-    })
+    # Simulamos o carregamento da matriz que já estaria no disco
+    def mock_obter_dado(dados, chave):
+        if chave == "raster_isolado":
+            return np.zeros((3, 3))
+        return None
+        
+    deps["obter_dado_carregado"] = MagicMock(side_effect=mock_obter_dado)
 
     with patch.multiple(principal, **deps):
         assert principal.main("RS") == 0
@@ -149,19 +159,15 @@ def test_main_ok_pula_etapa_terreno_se_estado_avancado():
 
 def test_main_ok_reseta_estado_se_uf_diferente():
     """
-    Se o state.json tiver uma UF (ex: RJ) e o usuário pedir outra (ex: RS),
+    Se a UF salva (ex: RJ) for diferente da UF atual (ex: RS),
     o programa deve chamar resetar_estado() para começar do zero.
     """
     deps = _dependencias_ok()
     
-    # Simulamos que a execução anterior foi no Rio de Janeiro (RJ)
-    deps["carregar_estado"] = MagicMock(return_value={
-        "state": 2, 
-        "uf": "RJ", 
-        "elevacao": 5, 
-        "files": {}, 
-        "metadata": {}
-    })
+    # O side_effect envia 2 na primeira vez (início da main) e 0 na segunda (após o reset)
+    deps["obter_etapa_atual"] = MagicMock(side_effect=[2, 0])
+    deps["obter_uf_salva"] = MagicMock(return_value="RJ")
+    deps["obter_elevacao_salva"] = MagicMock(return_value=5)
 
     with patch.multiple(principal, **deps):
         # O usuário agora digitou RS

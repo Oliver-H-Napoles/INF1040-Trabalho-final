@@ -1,10 +1,15 @@
-__all__ = ["cria_mascara_agua", "expandir_mascara_agua", "carrega_dados"]
+__all__ = [
+    "cria_mascara_agua", 
+    "expandir_mascara_agua", 
+    "carrega_dados"
+]
 
 # Import das bibliotecas necessárias
 from collections import deque
 from copy import deepcopy
 import numpy as np
-from json import load
+
+from validacao import valida_matrizes_tamanho
 
 
 # Dados encapsulados
@@ -15,44 +20,28 @@ _dados: dict = {
 
 
 # Funções
-def carrega_dados(path_arq: str) -> int:
+def carrega_dados(mascara: np.ndarray) -> int:
     '''
-        Objetivo: Carregar os dados caso a execução seja interrompida
+        Objetivo: Restaurar os dados internos da água a partir de uma matriz já carregada.
 
         @params:
-            "path_arq" -> String contendo o caminho para o arquivo com as informações da última execução a ser recuperada
+            "mascara" -> Numpy 2-dimensional array contendo a máscara d'água recuperada da persistência.
 
         @returns (convenção de ação — int):
             0 -> Se tudo foi carregado sem nenhum problema;
-            1 -> Não encontrou dados sobre a máscara d`água (ou nascente ausente);
-            2 -> Erro ao carregar os arquivos.
+            1 -> Erro de parâmetro (matriz inválida) ou nascente ausente na matriz.
 
         Assertiva de entrada:
-            O parâmetro "path_arq" tem que ser um caminho válido para um arquivo JSON
+            O parâmetro "mascara" deve ser um np.ndarray válido.
 
         Assertiva de saída:
             Em caso de êxito (0), a variável global _dados estará carregada com a máscara e com a nascente.
             Deve retornar um inteiro indicando o status da execução.
     '''
-    print("Carregando dados da última execução")
+    print("Carregando dados da máscara de água no TAD")
 
-    try:
-        with open(path_arq, "r", encoding="utf-8") as file:
-            data = load(file)
-    except Exception as erro:
-        print(f"Erro ao carregar state.json: {erro}")
-        return 2
-
-    try:
-        caminho_mascara = data["files"]["mascara_agua"]
-    except KeyError:
+    if mascara is None or not isinstance(mascara, np.ndarray):
         return 1
-
-    try:
-        mascara = np.load(caminho_mascara, allow_pickle=False)
-    except Exception as erro:
-        print(f"Erro ao carregar máscara: {erro}")
-        return 2
 
     nascente = acha_nascente(mascara)
 
@@ -60,7 +49,7 @@ def carrega_dados(path_arq: str) -> int:
         return 1
 
     global _dados
-    _dados["mascara"] = mascara
+    _dados["mascara"] = deepcopy(mascara)
     _dados["nascente"] = nascente
 
     return 0
@@ -68,7 +57,7 @@ def carrega_dados(path_arq: str) -> int:
 
 def acha_nascente(mat: np.ndarray) -> tuple[int, int] | None:
     '''
-        Objetivo: Localizar a nascente (canto com valor 0) na máscara de água.
+        Objetivo: Localizar a nascente (canto com valor 1) na máscara de água.
 
         @returns (convenção de produtora):
             (x, y) -> Tupla com a posição da nascente em caso de êxito;
@@ -84,13 +73,13 @@ def acha_nascente(mat: np.ndarray) -> tuple[int, int] | None:
     }
 
     for (x, y) in pos_fonte.values():
-        if mat[x][y] == 0:
+        if mat[x][y] == 1: # CORREÇÃO: A nascente tem valor 1 (água), não 0
             return (x, y)
 
     return None
 
 
-def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | None:
+def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | int:
     '''
         Objetivo: Criar a máscara (matriz) de água com nascente em um dos cantos
 
@@ -100,8 +89,8 @@ def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | Non
             "xy_fonte" -> Valor inteiro que representa em qual canto a nascente d`água está na matriz, ou seja, de onde a água se espalhará inicialmente.
         
         @return (convenção de produtora):
-            None -> Erro em relação aos parâmetros (tamanho inválido ou "xy_fonte" fora de [0, 3]);
-            Numpy 2-dimension array com todas as células com 0, exceto a nascente com 1, em caso de êxito.
+            Em caso de êxito -> Numpy 2-dimension array com todas as células com 0, exceto a nascente com 1;
+            1 -> Erro em relação aos parâmetros (tamanho inválido ou "xy_fonte" fora de [0, 3]);
 
         Asserivas de entrada:
             Os parâmetros "tam_x" e "tam_y" devem ser, ambos, positivos não nulos;
@@ -114,11 +103,11 @@ def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | Non
     print("Criando máscara de água")
     tamanhoValido: bool = (tam_x > 0) and (tam_y > 0)
     if not tamanhoValido:
-        return None
+        return 1
 
     fonteValida: bool = xy_fonte in [0, 1, 2, 3]
     if not fonteValida:
-        return None
+        return 1
     
     global _dados
     
@@ -142,7 +131,7 @@ def cria_mascara_agua(tam_x: int, tam_y: int, xy_fonte: int) -> np.ndarray | Non
     return deepcopy(_dados["mascara"])
 
 
-def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_mar: float) -> int | None:
+def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_mar: float) -> int:
     '''
         Objetivo: Expandir a máscara d`água para ver o percentual de inundação dado certo nível do mar
 
@@ -152,9 +141,10 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
             "nivel_do_mar" -> Inteiro que indica o nível de inundação a ser simulado
 
         @returns (convenção de produtora):
-            None -> Erro de parâmetro: nível do mar não positivo, tamanhos de "terreno"/"masc_agua"
-                    incompatíveis, ou "masc_agua" diferente da máscara armazenada neste módulo;
-            int  -> A quantidade de células inundadas para aquele nível do mar, em caso de êxito.
+            Em caso de êxito -> A quantidade de células inundadas para aquele nível do mar.
+            1 -> Nível do mar inválido (negativo ou nulo);
+            2 -> Matrizes de tamanho diferentes;
+            3 -> Máscara d`água alterada indevidamente;
 
         Assertivas de entradas:
             O parâmetro "terreno" deve seguir todas as assertivas do raster;
@@ -166,17 +156,16 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
     '''
     print("Expandindo máscara de água")
     if nivel_do_mar <= 0:
-        return None
+        return -1
 
     tam_x, tam_y = masc_agua.shape
-    has_same_size: bool = (tam_x, tam_y) == terreno.shape
-    if not has_same_size:
-        return None
+    if valida_matrizes_tamanho(terreno, masc_agua) != 0:
+        return -2
 
     global _dados
 
     if not np.array_equal(masc_agua, _dados["mascara"]):
-        return None
+        return -3
 
     # Para o BFS
     neighbors: deque[tuple[int, int]] = deque()
@@ -185,9 +174,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
     neighbors.append(_dados["nascente"])
     while bool(neighbors):
         x, y = neighbors.popleft()
-        # print(f"Expansão para a célula ({x}, {y}) {len(neighbors)} restantes")
 
-    
         for new_x, new_y in [(x-1,y),(x+1,y),(x,y-1),(x,y+1)]:
             if not (0 <= new_x < tam_x and 0 <= new_y < tam_y):
                 continue
@@ -196,5 +183,7 @@ def expandir_mascara_agua(terreno: np.ndarray, masc_agua: np.ndarray, nivel_do_m
                 if terreno[new_x][new_y] > -1:
                     qtd += 1 
                 neighbors.append((new_x, new_y))
+
+    _dados["mascara"] = deepcopy(masc_agua)
 
     return qtd

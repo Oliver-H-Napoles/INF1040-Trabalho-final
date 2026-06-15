@@ -1,3 +1,9 @@
+__all__ = [
+    "projetar_camadas",
+    "gerar_heatmap",
+    "plot_layers"
+]
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -115,7 +121,7 @@ def plot_layers(plot_obj) -> int:
         return 1
 
     try:
-        plot_obj.show()
+        plt.show()
         return 0
     except Exception:
         return 2

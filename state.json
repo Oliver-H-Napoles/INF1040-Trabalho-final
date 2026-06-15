@@ -1,10 +1,10 @@
 {
   "state": 3,
   "uf": "RJ",
-  "elevacao": 40,
+  "elevacao": 200,
   "files": {
-    "raster_isolado": "data/persistencia/raster_isolado.npy",
-    "mascara_agua": "data/persistencia/mascara_agua.npy"
+    "raster_isolado": "data\\persistencia\\raster_isolado.npy",
+    "mascara_agua": "data\\persistencia\\mascara_agua.npy"
   },
   "metadata": {
     "shape": [
@@ -12,7 +12,7 @@
       16200
     ],
     "xy_fonte": 2,
-    "area_inundada": 13172698,
-    "elevacao_simulada": 40
+    "area_inundada": 24149912,
+    "elevacao_simulada": 200
   }
 }
