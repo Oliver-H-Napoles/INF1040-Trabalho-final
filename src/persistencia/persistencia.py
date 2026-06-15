@@ -215,6 +215,15 @@ def _estado_vazio() -> dict:
 def obter_etapa_atual(estado: dict) -> int:
     """
     Retorna a etapa atual salva no estado.
+
+    Assertiva de entrada (Pré-condição):
+    - 'estado' deve ser um dicionário instanciado correspondente à estrutura do TAD.
+
+    Assertiva de saída (Pós-condição):
+    - Retorna um inteiro representando o nível de avanço da simulação.
+    - Se a chave 'state' não existir, retorna a constante ETAPA_INICIAL (0).
+    - O dicionário original não sofre nenhuma mutação.
+
     @param estado: Dicionário de estado atual.
     @return: Inteiro representando a etapa atual.
     """
@@ -223,6 +232,14 @@ def obter_etapa_atual(estado: dict) -> int:
 def obter_uf_salva(estado: dict) -> str | None:
     """
     Retorna a UF armazenada no estado.
+
+    Assertiva de entrada (Pré-condição):
+    - 'estado' deve ser um dicionário válido do TAD.
+
+    Assertiva de saída (Pós-condição):
+    - Retorna a string da UF salva na última execução, ou None se for a primeira execução/reset.
+    - O dicionário original não é alterado.
+
     @param estado: Dicionário de estado atual.
     @return: String contendo a UF ou None.
     """
@@ -231,6 +248,14 @@ def obter_uf_salva(estado: dict) -> str | None:
 def obter_elevacao_salva(estado: dict) -> int | None:
     """
     Retorna a elevação armazenada no estado.
+
+    Assertiva de entrada (Pré-condição):
+    - 'estado' deve ser um dicionário válido do TAD.
+
+    Assertiva de saída (Pós-condição):
+    - Retorna o valor inteiro da elevação alvo da última execução, ou None se inexistente.
+    - O estado original não sofre alteração de valores.
+
     @param estado: Dicionário de estado atual.
     @return: Inteiro contendo a elevação simulada ou None.
     """
@@ -239,6 +264,16 @@ def obter_elevacao_salva(estado: dict) -> int | None:
 def obter_metadado(estado: dict, chave: str, padrao: Any = None) -> Any:
     """
     Recupera um valor específico do dicionário de metadados do estado.
+
+    Assertiva de entrada (Pré-condição):
+    - 'estado' deve ser um dicionário contendo preferencialmente a chave 'metadata'.
+    - 'chave' deve ser uma string referenciando a variável desejada (ex: 'area_inundada').
+
+    Assertiva de saída (Pós-condição):
+    - Retorna o valor exato mapeado pela chave no submódulo de metadados.
+    - Retorna o valor de 'padrao' se a chave ou o próprio submódulo 'metadata' não existirem.
+    - Leitura limpa: nenhuma modificação é feita na estrutura.
+
     @param estado: Dicionário de estado atual.
     @param chave: String com o nome do metadado.
     @param padrao: Valor retornado caso a chave não exista.
@@ -249,6 +284,16 @@ def obter_metadado(estado: dict, chave: str, padrao: Any = None) -> Any:
 def definir_parametros_base(estado: dict, uf: str, elevacao: int) -> None:
     """
     Atualiza a UF e elevação no estado atual.
+
+    Assertiva de entrada (Pré-condição):
+    - 'estado' deve ser um dicionário mutável.
+    - 'uf' deve ser uma string validada da Unidade Federativa.
+    - 'elevacao' deve ser um inteiro válido representando o nível do mar.
+
+    Assertiva de saída (Pós-condição):
+    - O dicionário 'estado' sofre mutação (in-place).
+    - As chaves "uf" e "elevacao" no topo da hierarquia do estado passam a apontar para os novos valores.
+
     @param estado: Dicionário de estado atual.
     @param uf: String com a sigla da UF.
     @param elevacao: Inteiro da elevação.
@@ -259,6 +304,16 @@ def definir_parametros_base(estado: dict, uf: str, elevacao: int) -> None:
 def obter_dado_carregado(dados: dict, chave: str) -> Any:
     """
     Retorna um dado pesado carregado do disco (ex: raster_isolado).
+
+    Assertiva de entrada (Pré-condição):
+    - 'dados' deve ser um dicionário resultante da função carregar_dados_salvos().
+    - 'chave' deve ser uma string válida correspondente ao nome de um arquivo mapeado.
+
+    Assertiva de saída (Pós-condição):
+    - Retorna o objeto alocado em memória (geralmente np.ndarray) referenciado pela chave.
+    - Retorna None caso a chave não tenha sido carregada.
+    - Nenhuma operação de I/O de disco é realizada nesta função (apenas consulta em memória).
+
     @param dados: Dicionário de dados carregados do disco.
     @param chave: String com o nome do dado.
     @return: Objeto carregado ou None.
@@ -268,6 +323,15 @@ def obter_dado_carregado(dados: dict, chave: str) -> Any:
 def obter_metadado_carregado(dados: dict, chave: str) -> Any:
     """
     Retorna um metadado que foi carregado junto com os dados.
+
+    Assertiva de entrada (Pré-condição):
+    - 'dados' deve ser um dicionário resultante da leitura dos dados persistidos.
+    - 'chave' deve ser uma string procurando um dado escalar isolado.
+
+    Assertiva de saída (Pós-condição):
+    - Busca e retorna o valor contido na sub-chave '_metadata' referenciada por 'chave'.
+    - Retorna None se a hierarquia '_metadata' ou a 'chave' não existirem.
+
     @param dados: Dicionário de dados carregados.
     @param chave: String com o nome do metadado.
     @return: Valor do metadado ou None.
